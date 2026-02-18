@@ -14,6 +14,7 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [userRole, setUserRole] = useState(null); // Store user role
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
@@ -45,7 +46,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, googleSignIn, logout }}>
+        <AuthContext.Provider value={{ user, userRole, setUserRole, loading, googleSignIn, logout }}>
             {children}
         </AuthContext.Provider>
     );
