@@ -66,137 +66,140 @@ export default function SignupPage() {
 
     if (loading || (user && userRole)) {
         return (
-            <div className="flex h-screen items-center justify-center bg-gray-100 dark:bg-gray-900">
-                <div className="h-16 w-16 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+            <div className="flex h-screen items-center justify-center bg-white">
+                <div className="h-8 w-8 animate-spin border-2 border-zinc-200 border-t-zinc-900 rounded-full"></div>
             </div>
         );
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
-            <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl dark:bg-gray-800">
-                <h1 className="mb-2 text-center text-3xl font-bold text-gray-900 dark:text-white">
-                    Manan AI
-                </h1>
-                <p className="mb-8 text-center text-gray-500 dark:text-gray-400">
-                    Create your account
-                </p>
+        <div className="flex min-h-screen items-center justify-center bg-white px-4 font-sans text-zinc-950">
+            <div className="w-full max-w-md">
+
+                {/* Logo / Header */}
+                <div className="mb-10 text-center">
+                    <h1 className="font-heading font-bold text-3xl uppercase tracking-tighter border-zinc-900 inline-block px-1">
+                        Manan AI
+                    </h1>
+                    <p className="mt-2 text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                        Create Account
+                    </p>
+                </div>
 
                 {errorMsg && (
-                    <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800">
-                        {errorMsg}
+                    <div className="mb-6 border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-600 uppercase tracking-wide flex items-center gap-2">
+                        <span className="text-lg">!</span> {errorMsg}
                     </div>
                 )}
 
-                <form onSubmit={handleSignup} className="space-y-5">
+                <form onSubmit={handleSignup} className="space-y-6">
                     {/* Role Selection */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            I am a
+                    <div className="space-y-3">
+                        <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500">
+                            I am a...
                         </label>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-4">
                             <button
                                 type="button"
                                 onClick={() => { setSelectedRole("student"); setErrorMsg(""); }}
-                                className={`flex flex-col items-center justify-center rounded-xl border-2 p-3 transition-all ${selectedRole === "student"
-                                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                                        : "border-gray-200 hover:border-blue-200 dark:border-gray-700 dark:hover:border-gray-600"
+                                className={`group flex flex-col items-center justify-center p-4 border transition-all ${selectedRole === "student"
+                                    ? "bg-zinc-900 border-zinc-900 text-white"
+                                    : "bg-white border-zinc-200 text-zinc-400 hover:border-zinc-900 hover:text-zinc-900"
                                     }`}
                             >
-                                <span className="text-xl mb-1">🎓</span>
-                                <span className={`text-sm font-medium ${selectedRole === "student" ? "text-blue-600 dark:text-blue-400" : "text-gray-600 dark:text-gray-400"
-                                    }`}>Student</span>
+                                <span className="text-xl mb-2 grayscale group-hover:grayscale-0">🎓</span>
+                                <span className="text-xs font-bold uppercase tracking-widest">Student</span>
                             </button>
 
                             <button
                                 type="button"
                                 onClick={() => { setSelectedRole("admin"); setErrorMsg(""); }}
-                                className={`flex flex-col items-center justify-center rounded-xl border-2 p-3 transition-all ${selectedRole === "admin"
-                                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                                        : "border-gray-200 hover:border-blue-200 dark:border-gray-700 dark:hover:border-gray-600"
+                                className={`group flex flex-col items-center justify-center p-4 border transition-all ${selectedRole === "admin"
+                                    ? "bg-zinc-900 border-zinc-900 text-white"
+                                    : "bg-white border-zinc-200 text-zinc-400 hover:border-zinc-900 hover:text-zinc-900"
                                     }`}
                             >
-                                <span className="text-xl mb-1">👨‍🏫</span>
-                                <span className={`text-sm font-medium ${selectedRole === "admin" ? "text-blue-600 dark:text-blue-400" : "text-gray-600 dark:text-gray-400"
-                                    }`}>Admin/Faculty</span>
+                                <span className="text-xl mb-2 grayscale group-hover:grayscale-0">👨‍🏫</span>
+                                <span className="text-xs font-bold uppercase tracking-widest">Faculty</span>
                             </button>
                         </div>
-
                     </div>
 
                     {/* Email */}
-                    <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Email
+                    <div className="space-y-2">
+                        <label htmlFor="email" className="block text-xs font-bold uppercase tracking-widest text-zinc-500">
+                            Email Address
                         </label>
-                        <input
-                            id="email"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="you@example.com"
-                            required
-                            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
-                        />
+                        <div className="relative group">
+                            <input
+                                id="email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="you@university.edu"
+                                required
+                                className="w-full bg-white border-b-2 border-zinc-200 px-0 py-2 text-zinc-900 placeholder-zinc-300 focus:border-zinc-900 focus:outline-none transition-colors font-medium rounded-none"
+                            />
+                        </div>
                     </div>
 
                     {/* Password */}
-                    <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Password
-                        </label>
-                        <input
-                            id="password"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="At least 6 characters"
-                            required
-                            minLength={6}
-                            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
-                        />
-                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label htmlFor="password" className="block text-xs font-bold uppercase tracking-widest text-zinc-500">
+                                Password
+                            </label>
+                            <div className="relative group">
+                                <input
+                                    id="password"
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    required
+                                    minLength={6}
+                                    className="w-full bg-white border-b-2 border-zinc-200 px-0 py-2 text-zinc-900 placeholder-zinc-300 focus:border-zinc-900 focus:outline-none transition-colors font-medium rounded-none"
+                                />
+                            </div>
+                        </div>
 
-                    {/* Confirm Password */}
-                    <div>
-                        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Confirm Password
-                        </label>
-                        <input
-                            id="confirmPassword"
-                            type="password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            placeholder="Re-enter your password"
-                            required
-                            minLength={6}
-                            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
-                        />
+                        <div className="space-y-2">
+                            <label htmlFor="confirmPassword" className="block text-xs font-bold uppercase tracking-widest text-zinc-500">
+                                Confirm
+                            </label>
+                            <div className="relative group">
+                                <input
+                                    id="confirmPassword"
+                                    type="password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    required
+                                    minLength={6}
+                                    className="w-full bg-white border-b-2 border-zinc-200 px-0 py-2 text-zinc-900 placeholder-zinc-300 focus:border-zinc-900 focus:outline-none transition-colors font-medium rounded-none"
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     {/* Submit */}
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-white font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="w-full bg-zinc-900 text-white font-bold uppercase tracking-widest text-xs py-4 hover:bg-zinc-800 transition-all active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed mt-6"
                     >
-                        {isSubmitting ? (
-                            <span className="flex items-center justify-center gap-2">
-                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-                                Creating account...
-                            </span>
-                        ) : (
-                            "Create Account"
-                        )}
+                        {isSubmitting ? "Creating Profile..." : "Complete Registration"}
                     </button>
                 </form>
 
-                <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                    Already have an account?{" "}
-                    <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium dark:text-blue-400">
-                        Sign in
-                    </Link>
-                </p>
+                <div className="mt-8 text-center border-t border-zinc-100 pt-6">
+                    <p className="text-xs text-zinc-500">
+                        Already have an account?{" "}
+                        <Link href="/login" className="text-zinc-900 font-bold hover:underline underline-offset-4 decoration-zinc-900">
+                            SIGN IN
+                        </Link>
+                    </p>
+                </div>
             </div>
         </div>
     );

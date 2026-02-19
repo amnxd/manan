@@ -125,8 +125,8 @@ export default function DashboardLayout({ children }) {
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-auto p-4 md:p-8 bg-zinc-50/30">
-            <div className="w-full max-w-[1600px] mx-auto">
+        <div className={`flex-1 p-4 md:p-8 bg-zinc-50/30 ${pathname === "/dashboard/career" ? "overflow-hidden flex flex-col" : "overflow-auto"}`}>
+          <div className={`w-full max-w-[1600px] mx-auto ${pathname === "/dashboard/career" ? "flex-1 min-h-0 flex flex-col" : ""}`}>
                 {children}
             </div>
         </div>

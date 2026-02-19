@@ -1,7 +1,8 @@
+
 import os
 import random
-from typing import Optional
-from fastapi import FastAPI, UploadFile, File
+from typing import Optional, List
+from fastapi import FastAPI, UploadFile, File, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -142,6 +143,17 @@ class DoubtRequest(BaseModel):
 @app.post("/solve-doubt")
 def solve_doubt(request: DoubtRequest):
     # Check for hardcoded OSI Model query
+    try:
+        # Check System Settings for Exam Mode
+        settings_doc = db.collection("system").document("settings").get()
+        if settings_doc.exists and settings_doc.to_dict().get("exam_mode", False):
+             return {
+                "answer": "⚠️ Exam Mode is Active. 'Ask Manan' is temporarily disabled.",
+                "citations": []
+            }
+    except:
+        pass # Fail open if DB error, or log it
+
     if "osi" in request.question_text.lower():
         return {
             "answer": OSI_MODEL_RESPONSE,
@@ -527,6 +539,23 @@ def get_courses():
         return {"status": "error", "message": str(e)}
 
 
+
+@app.get("/courses/{course_id}")
+def get_single_course(course_id: str):
+    """Fetch a single course by ID, including syllabus_topics."""
+    try:
+        doc = db.collection("courses").document(course_id).get()
+        if not doc.exists:
+            return {"status": "error", "message": "Course not found"}
+        d = doc.to_dict()
+        d["id"] = doc.id
+        if "created_at" in d and d["created_at"]:
+            d["created_at"] = str(d["created_at"])
+        return {"status": "success", "course": d}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 class EnrollRequest(BaseModel):
     student_id: str
     course_id: str
@@ -655,27 +684,209 @@ def ask_doubt(req: DoubtRequest):
         decoded = auth.verify_id_token(req.token)
         if decoded["uid"] != req.student_id:
              return {"status": "error", "message": "Unauthorized"}
-            
-        from firebase_config import db
-        
+
+        student_email = decoded.get("email", "Unknown")
+
         doubt_data = {
             "course_id": req.course_id,
             "student_id": req.student_id,
+            "student_email": student_email,
             "question": req.question,
             "status": "open",
             "created_at": firestore.SERVER_TIMESTAMP
         }
-        
-        # Add to global 'doubts' collection (easier to query for admin across courses)
-        # Or course subcollection. Let's use root collection for easier unified querying.
-        db.collection("doubts").add(doubt_data)
-        
+
+        # Add to global 'doubts' collection
+        _, doubt_ref = db.collection("doubts").add(doubt_data)
+
         # Increment doubt count on course
-        db.collection("courses").document(req.course_id).update({
-            "doubts_count": firestore.Increment(1)
-        })
-        
+        course_ref = db.collection("courses").document(req.course_id)
+        course_doc = course_ref.get()
+        course_title = "Unknown Course"
+        teacher_id = None
+        if course_doc.exists:
+            cd = course_doc.to_dict()
+            course_title = cd.get("title", course_title)
+            teacher_id = cd.get("teacher_id")
+            course_ref.update({"doubts_count": firestore.Increment(1)})
+
+        # Create a notification for the faculty
+        notif_data = {
+            "title": f"New doubt in {course_title}: \"{req.question[:80]}...\"",
+            "type": "info",
+            "sender_uid": req.student_id,
+            "sender_email": student_email,
+            "target_uid": teacher_id,
+            "doubt_id": doubt_ref.id,
+            "course_id": req.course_id,
+            "created_at": firestore.SERVER_TIMESTAMP,
+        }
+        db.collection("notifications").add(notif_data)
+
+        return {"status": "success", "doubt_id": doubt_ref.id}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.get("/courses/{course_id}/doubts")
+def get_course_doubts(course_id: str, student_id: str = Query(default=None)):
+    """Get doubts for a specific course, optionally filtered by student_id."""
+    try:
+        query = db.collection("doubts").where("course_id", "==", course_id)
+        if student_id:
+            query = query.where("student_id", "==", student_id)
+
+        docs = query.stream()
+        doubts = []
+        for doc in docs:
+            d = doc.to_dict()
+            d["id"] = doc.id
+            if d.get("created_at"):
+                d["created_at"] = d["created_at"].isoformat()
+            doubts.append(d)
+        # Sort by created_at descending (newest first)
+        doubts.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        return {"status": "success", "doubts": doubts}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+class ResolveDoubtRequest(BaseModel):
+    token: str
+    answer: str = ""
+
+@app.put("/doubts/{doubt_id}/resolve")
+def resolve_doubt(doubt_id: str, req: ResolveDoubtRequest):
+    """Faculty marks a doubt as resolved."""
+    try:
+        decoded = auth.verify_id_token(req.token)
+        uid = decoded["uid"]
+
+        # Verify the user is admin/teacher
+        user_doc = db.collection("users").document(uid).get()
+        if not user_doc.exists or user_doc.to_dict().get("role") != "admin":
+            return {"status": "error", "message": "Unauthorized – admin only"}
+
+        doubt_ref = db.collection("doubts").document(doubt_id)
+        doubt_doc = doubt_ref.get()
+        if not doubt_doc.exists:
+            return {"status": "error", "message": "Doubt not found"}
+
+        update = {"status": "resolved", "resolved_at": firestore.SERVER_TIMESTAMP, "resolved_by": uid}
+        if req.answer:
+            update["faculty_answer"] = req.answer
+        doubt_ref.update(update)
+
         return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+class AdminDoubtsRequest(BaseModel):
+    teacher_id: str
+    token: str
+
+@app.post("/admin/doubts")
+def get_admin_doubts(req: AdminDoubtsRequest):
+    """Get all open doubts across courses taught by this teacher."""
+    try:
+        decoded = auth.verify_id_token(req.token)
+
+        # 1. Get all courses taught by this teacher
+        courses_query = db.collection("courses").where("teacher_id", "==", req.teacher_id).stream()
+        course_map = {}
+        for c in courses_query:
+            cd = c.to_dict()
+            course_map[c.id] = cd.get("title", "Unknown")
+
+        if not course_map:
+            return {"status": "success", "doubts": []}
+
+        # 2. Get all open doubts and filter by teacher's courses
+        all_doubts = db.collection("doubts").where("status", "==", "open").stream()
+        doubts = []
+        for doc in all_doubts:
+            d = doc.to_dict()
+            if d.get("course_id") in course_map:
+                d["id"] = doc.id
+                d["course_title"] = course_map[d["course_id"]]
+                if d.get("created_at"):
+                    d["created_at"] = d["created_at"].isoformat()
+                doubts.append(d)
+
+        # Sort by created_at descending (newest first)
+        doubts.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        return {"status": "success", "doubts": doubts}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+
+class AdminStudentsRequest(BaseModel):
+    token: str
+
+@app.post("/admin/students")
+def get_all_students(req: AdminStudentsRequest):
+    """Fetch all users with role='student' including their stats."""
+    try:
+        decoded = auth.verify_id_token(req.token)
+        # Verify admin
+        user_doc = db.collection("users").document(decoded["uid"]).get()
+        if not user_doc.exists or user_doc.to_dict().get("role") != "admin":
+             return {"status": "error", "message": "Unauthorized"}
+        
+        docs = db.collection("users").where("role", "==", "student").stream()
+        students = []
+        for doc in docs:
+            d = doc.to_dict()
+            student = {
+                "id": doc.id,
+                "uid": d.get("uid"),
+                "email": d.get("email"),
+                "name": d.get("profile", {}).get("name", "Unknown"),
+                "roll": d.get("profile", {}).get("roll_number", "N/A"), # Assuming roll exists or N/A
+                "academic_stats": d.get("academic_stats", {}),
+                "created_at": str(d.get("created_at", ""))
+            }
+            students.append(student)
+            
+        return {"status": "success", "students": students}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+class BatchNotifyRequest(BaseModel):
+    token: str
+    student_ids: List[str]
+    title: str
+    type: str = "info" # info, urgent, warning, success
+
+@app.post("/admin/notify/batch")
+def batch_notify(req: BatchNotifyRequest):
+    """Send a notification to multiple students."""
+    try:
+        decoded = auth.verify_id_token(req.token)
+        # Verify admin
+        user_doc = db.collection("users").document(decoded["uid"]).get()
+        if not user_doc.exists or user_doc.to_dict().get("role") != "admin":
+             return {"status": "error", "message": "Unauthorized"}
+        
+        batch = db.batch()
+        count = 0
+        for uid in req.student_ids:
+            ref = db.collection("notifications").document()
+            batch.set(ref, {
+                "title": req.title,
+                "type": req.type,
+                "target_uid": uid,
+                "sender_uid": decoded["uid"],
+                "created_at": firestore.SERVER_TIMESTAMP,
+                "read": False
+            })
+            count += 1
+            
+        batch.commit()
+        return {"status": "success", "count": count}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -780,6 +991,66 @@ def get_admin_stats(req: AdminStatsRequest):
         return {"status": "error", "message": str(e)}
 
 
+# ─── Notifications ────────────────────────────────────────────────────────────
+
+class NotificationCreateRequest(BaseModel):
+    token: str
+    title: str
+    type: str = "info"  # urgent, info, success, warning
+
+
+@app.post("/notifications")
+def create_notification(req: NotificationCreateRequest):
+    """Admin sends a notification to all students."""
+    try:
+        decoded = auth.verify_id_token(req.token)
+        uid = decoded["uid"]
+
+        # Verify sender is admin
+        user_doc = db.collection("users").document(uid).get()
+        if not user_doc.exists or user_doc.to_dict().get("role") != "admin":
+            return {"status": "error", "message": "Unauthorized – admin only"}
+
+        if req.type not in ("urgent", "info", "success", "warning"):
+            return {"status": "error", "message": "Invalid type"}
+
+        notif_data = {
+            "title": req.title,
+            "type": req.type,
+            "sender_uid": uid,
+            "sender_email": decoded.get("email", ""),
+            "created_at": firestore.SERVER_TIMESTAMP,
+        }
+
+        _, doc_ref = db.collection("notifications").add(notif_data)
+        return {"status": "success", "id": doc_ref.id}
+
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.get("/notifications")
+def get_notifications(limit: int = 20):
+    """Fetch recent notifications for students."""
+    try:
+        docs = (
+            db.collection("notifications")
+            .order_by("created_at", direction=firestore.Query.DESCENDING)
+            .limit(limit)
+            .stream()
+        )
+        results = []
+        for doc in docs:
+            d = doc.to_dict()
+            d["id"] = doc.id
+            if d.get("created_at"):
+                d["created_at"] = d["created_at"].isoformat()
+            results.append(d)
+        return {"status": "success", "notifications": results}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 # ─── Placement Preparation ────────────────────────────────────────────────────
 
 @app.get("/placement-drives")
@@ -867,3 +1138,52 @@ def save_placement_progress(req: PlacementProgressRequest):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+
+# ─── System Settings ──────────────────────────────────────────────────────────
+
+@app.get("/admin/settings")
+def get_system_settings():
+    try:
+        doc = db.collection("system").document("settings").get()
+        if doc.exists:
+            return {"status": "success", "settings": doc.to_dict()}
+        else:
+            # Return defaults
+            defaults = {
+                "maintenance_mode": False,
+                "exam_mode": False,
+                "attendance_threshold": 75,
+                "cgpa_threshold": 5.0
+            }
+            return {"status": "success", "settings": defaults}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+class SystemSettingsRequest(BaseModel):
+    token: str
+    maintenance_mode: bool
+    exam_mode: bool
+    attendance_threshold: float
+    cgpa_threshold: float
+
+@app.post("/admin/settings")
+def update_system_settings(req: SystemSettingsRequest):
+    try:
+        decoded = auth.verify_id_token(req.token)
+        # Verify admin
+        user_doc = db.collection("users").document(decoded["uid"]).get()
+        if not user_doc.exists or user_doc.to_dict().get("role") != "admin":
+             return {"status": "error", "message": "Unauthorized"}
+            
+        db.collection("system").document("settings").set({
+            "maintenance_mode": req.maintenance_mode,
+            "exam_mode": req.exam_mode,
+            "attendance_threshold": req.attendance_threshold,
+            "cgpa_threshold": req.cgpa_threshold,
+            "updated_at": firestore.SERVER_TIMESTAMP,
+            "updated_by": decoded["uid"]
+        }, merge=True)
+        
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

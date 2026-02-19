@@ -1,1 +1,1 @@
-print("Nova Scholar AI Agent - Active")
+print("Manan AI Agent - Active")

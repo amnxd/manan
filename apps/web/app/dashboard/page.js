@@ -48,13 +48,43 @@ export default function DashboardPage() {
     const risk = getRiskDisplay();
     const predictedCgpa = prediction?.predicted_cgpa ?? "-";
 
-    // --- Widget B: Recent Activity Data ---
-    const notifications = [
-        { id: 1, text: "Assignment 3 is due tomorrow", type: "urgent", time: "2h ago" },
-        { id: 2, text: "New grade posted for Physics", type: "info", time: "5h ago" },
-        { id: 3, text: "Career fair registration is open", type: "success", time: "1d ago" },
-        { id: 4, text: "Library book overdue", type: "warning", time: "2d ago" },
-    ];
+    // --- Widget B: Recent Activity Data (live from Firestore) ---
+    const [notifications, setNotifications] = useState([]);
+    const [notifsLoading, setNotifsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            try {
+                const res = await fetch(`${API_BASE}/notifications?limit=10`);
+                const data = await res.json();
+                if (data.status === "success" && data.notifications) {
+                    setNotifications(data.notifications.map(n => ({
+                        id: n.id,
+                        text: n.title,
+                        type: n.type || "info",
+                        time: getRelativeTime(n.created_at),
+                    })));
+                }
+            } catch (err) {
+                console.error("Failed to fetch notifications:", err);
+            } finally {
+                setNotifsLoading(false);
+            }
+        };
+        fetchNotifications();
+    }, []);
+
+    const getRelativeTime = (isoStr) => {
+        if (!isoStr) return "";
+        const diff = Date.now() - new Date(isoStr).getTime();
+        const mins = Math.floor(diff / 60000);
+        if (mins < 1) return "Just now";
+        if (mins < 60) return `${mins}m ago`;
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return `${hrs}h ago`;
+        const days = Math.floor(hrs / 24);
+        return `${days}d ago`;
+    };
 
     const getIcon = (type) => {
         switch (type) {
@@ -192,7 +222,19 @@ export default function DashboardPage() {
                 </h3>
 
                 <div className="flex-1 space-y-0 overflow-y-auto custom-scrollbar border-l border-zinc-100 ml-2 pl-6 relative">
-                    {notifications.map((note) => (
+                    {notifsLoading ? (
+                        <div className="space-y-6">
+                            {[1, 2, 3, 4].map(i => (
+                                <div key={i} className="animate-pulse">
+                                    <div className="h-3 bg-zinc-100 w-20 mb-2"></div>
+                                    <div className="h-4 bg-zinc-100 w-48"></div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : notifications.length === 0 ? (
+                        <p className="text-sm text-zinc-400 font-medium py-4">No notifications yet.</p>
+                    ) : (
+                        notifications.map((note) => (
                         <div key={note.id} className="group relative pb-8 last:pb-0">
                             <span className="absolute -left-[29px] top-1 w-2 h-2 bg-zinc-200 border border-white group-hover:bg-zinc-900 transition-colors"></span>
                             <div className="flex flex-col gap-1">
@@ -207,7 +249,7 @@ export default function DashboardPage() {
                                 </p>
                             </div>
                         </div>
-                    ))}
+                        )))}
                 </div>
 
                 <button className="mt-8 w-full py-3 text-xs text-zinc-600 hover:text-white hover:bg-zinc-900 border border-zinc-200 hover:border-zinc-900 font-bold uppercase tracking-widest transition-colors text-center">

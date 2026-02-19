@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "../../../../context/AuthContext";
-import { BookOpen, FileText, ArrowLeft, HelpCircle, Send, Download } from "lucide-react";
+import { BookOpen, FileText, ArrowLeft, HelpCircle, Send, CheckCircle, Clock, X, MessageCircle } from "lucide-react";
+
+const API_BASE = "http://127.0.0.1:8000";
 
 export default function CourseDetailPage() {
     const { id } = useParams();
@@ -16,26 +18,36 @@ export default function CourseDetailPage() {
     const [doubtOpen, setDoubtOpen] = useState(false);
     const [doubtQuestion, setDoubtQuestion] = useState("");
     const [submittingDoubt, setSubmittingDoubt] = useState(false);
+    const [doubtSuccess, setDoubtSuccess] = useState(false);
+
+    // Past Doubts
+    const [myDoubts, setMyDoubts] = useState([]);
+    const [loadingDoubts, setLoadingDoubts] = useState(false);
 
     useEffect(() => {
         if (user && id) {
             fetchCourseDetails();
+            fetchMyDoubts();
         }
     }, [user, id]);
 
     const fetchCourseDetails = async () => {
         try {
-            // In a real app, we'd have a specific GET /courses/:id endpoint
-            // For now, we'll fetch all and filter (prototype shortcut)
-            const res = await fetch("http://127.0.0.1:8000/courses");
+            const res = await fetch(`${API_BASE}/courses/${id}`);
             const data = await res.json();
-            if (data.courses) {
-                const found = data.courses.find(c => c.id === id);
-                if (found) {
-                    setCourse(found);
-                } else {
-                    alert("Course not found");
-                    router.push("/dashboard/courses");
+            if (data.status === "success" && data.course) {
+                setCourse(data.course);
+            } else {
+                // Fallback: try fetching from /courses list
+                const listRes = await fetch(`${API_BASE}/courses`);
+                const listData = await listRes.json();
+                if (listData.courses) {
+                    const found = listData.courses.find(c => c.id === id);
+                    if (found) setCourse(found);
+                    else {
+                        alert("Course not found");
+                        router.push("/dashboard/courses");
+                    }
                 }
             }
         } catch (error) {
@@ -45,11 +57,19 @@ export default function CourseDetailPage() {
         }
     };
 
-    const handleDownloadSyllabus = () => {
-        if (course?.syllabus_url) {
-            window.open(course.syllabus_url, "_blank");
-        } else {
-            alert("Syllabus URL not available.");
+    const fetchMyDoubts = async () => {
+        if (!user) return;
+        setLoadingDoubts(true);
+        try {
+            const res = await fetch(`${API_BASE}/courses/${id}/doubts?student_id=${user.uid}`);
+            const data = await res.json();
+            if (data.status === "success") {
+                setMyDoubts(data.doubts || []);
+            }
+        } catch (error) {
+            console.error("Error fetching doubts:", error);
+        } finally {
+            setLoadingDoubts(false);
         }
     };
 
@@ -57,25 +77,28 @@ export default function CourseDetailPage() {
         e.preventDefault();
         setSubmittingDoubt(true);
         try {
-             const token = await user.getIdToken();
-             const res = await fetch("http://127.0.0.1:8000/courses/doubts", {
-                 method: "POST",
-                 headers: { "Content-Type": "application/json" },
-                 body: JSON.stringify({
-                     student_id: user.uid,
-                     course_id: id,
-                     question: doubtQuestion,
-                     token: token
-                 })
-             });
+            const token = await user.getIdToken();
+            const res = await fetch(`${API_BASE}/courses/doubts`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    student_id: user.uid,
+                    course_id: id,
+                    question: doubtQuestion,
+                    token: token
+                })
+            });
 
-             if (res.ok) {
-                 alert("Doubt submitted successfully!");
-                 setDoubtOpen(false);
-                 setDoubtQuestion("");
-             } else {
-                 alert("Failed to submit doubt.");
-             }
+            if (res.ok) {
+                setDoubtOpen(false);
+                setDoubtQuestion("");
+                setDoubtSuccess(true);
+                setTimeout(() => setDoubtSuccess(false), 4000);
+                // Refresh doubts list
+                fetchMyDoubts();
+            } else {
+                alert("Failed to submit doubt.");
+            }
         } catch (error) {
             console.error("Error submitting doubt:", error);
         } finally {
@@ -83,128 +106,249 @@ export default function CourseDetailPage() {
         }
     };
 
-    if (loading) return <div className="p-10 text-center">Loading course...</div>;
-    if (!course) return <div className="p-10 text-center">Course not found.</div>;
+    if (loading) return (
+        <div className="flex items-center justify-center py-20">
+            <div className="inline-block animate-spin h-8 w-8 border-4 border-zinc-900 border-t-transparent"></div>
+        </div>
+    );
+    if (!course) return <div className="p-10 text-center text-zinc-500 font-medium uppercase tracking-wider text-sm">Course not found.</div>;
+
+    const syllabusTopics = course.syllabus_topics || [];
 
     return (
-        <div className="space-y-8 animate-in fade-in zoom-in duration-300 max-w-5xl mx-auto">
+        <div className="space-y-6 animate-in fade-in zoom-in duration-300 max-w-6xl mx-auto">
             {/* Header */}
-            <div className="flex items-center gap-4">
-                <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+            <div className="flex items-center gap-4 pb-6 border-b border-zinc-200">
+                <button onClick={() => router.back()} className="p-2 hover:bg-zinc-100 border border-transparent hover:border-zinc-200 transition-colors">
                     <ArrowLeft size={24} />
                 </button>
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{course.title}</h1>
-                    <p className="text-gray-500 dark:text-gray-400">Instructor: {course.teacher_name || "Unknown"}</p>
+                    <h1 className="text-2xl font-heading font-bold text-zinc-900 uppercase tracking-tight">{course.title}</h1>
+                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-wide mt-1">
+                        INSTR: {course.teacher_name || course.instructor || "Unknown"}
+                    </p>
                 </div>
             </div>
 
+            {/* Success Banner */}
+            {doubtSuccess && (
+                <div className="bg-emerald-50 border-l-4 border-emerald-500 text-emerald-700 p-4 text-sm animate-in slide-in-from-top-2 flex items-center gap-3">
+                    <CheckCircle size={18} />
+                    <div>
+                        <p className="font-bold uppercase tracking-wide text-xs">Doubt Submitted!</p>
+                        <p className="text-sm">Your question has been sent to the instructor. You'll be notified when they respond.</p>
+                    </div>
+                </div>
+            )}
+
             {/* Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column: Syllabus & Content */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column: Overview, Syllabus & Doubts History */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-gray-100 dark:border-slate-800 shadow-sm">
-                        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                            <BookOpen className="text-blue-600" size={24} />
-                            Course Overview
-                        </h2>
-                        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                            {course.description || "No description provided for this course."}
-                        </p>
+                    {/* Course Overview */}
+                    <div className="bg-white border border-zinc-200 hover:border-zinc-900 transition-colors">
+                        <div className="p-6 border-b border-zinc-100">
+                            <h2 className="text-lg font-heading font-bold uppercase tracking-tight flex items-center gap-2 text-zinc-900">
+                                <BookOpen className="text-zinc-900" size={20} />
+                                Course Overview
+                            </h2>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-sm text-zinc-600 leading-relaxed font-medium">
+                                {course.description || "No description provided for this course."}
+                            </p>
+                        </div>
                     </div>
 
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-gray-100 dark:border-slate-800 shadow-sm">
-                        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                            <FileText className="text-green-600" size={24} />
-                            Syllabus
-                        </h2>
-                        {course.syllabus_uploaded ? (
-                            <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-900/30">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center text-green-600 dark:text-green-200">
-                                        <FileText size={20} />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900 dark:text-white">Course Syllabus</h3>
-                                        <p className="text-xs text-green-600 dark:text-green-400">Available for download</p>
+                    {/* Syllabus */}
+                    <div className="bg-white border border-zinc-200 hover:border-zinc-900 transition-colors">
+                        <div className="p-6 border-b border-zinc-100">
+                            <h2 className="text-lg font-heading font-bold uppercase tracking-tight flex items-center gap-2 text-zinc-900">
+                                <FileText className="text-zinc-900" size={20} />
+                                Syllabus
+                            </h2>
+                        </div>
+                        <div className="p-6">
+                            {syllabusTopics.length > 0 ? (
+                                <div className="space-y-0">
+                                    {syllabusTopics.map((topic, idx) => (
+                                        <div key={idx} className="flex items-start gap-4 py-3 border-b border-zinc-100 last:border-0 group">
+                                            <span className="text-xs font-bold text-zinc-400 font-mono w-8 shrink-0 pt-0.5 group-hover:text-zinc-900 transition-colors">
+                                                {String(idx + 1).padStart(2, "0")}
+                                            </span>
+                                            <span className="text-sm text-zinc-700 font-medium group-hover:text-zinc-900 transition-colors">
+                                                {topic}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : course.syllabus_uploaded ? (
+                                <div className="flex items-center justify-between p-4 bg-emerald-50 border border-emerald-200">
+                                    <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                                                <FileText size={20} />
+                                            </div>
+                                            <div>
+                                            <h3 className="font-heading font-bold text-zinc-900 text-sm uppercase tracking-tight">Course Syllabus</h3>
+                                            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Available</p>
+                                        </div>
                                     </div>
                                 </div>
-                                <button 
-                                    onClick={handleDownloadSyllabus}
-                                    className="px-4 py-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
-                                >
-                                    <Download size={16} />
-                                    Download
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="text-center py-8 text-gray-500 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-gray-200 dark:border-slate-700">
-                                <p>Syllabus has not been uploaded yet.</p>
-                            </div>
-                        )}
+                            ) : (
+                                <div className="text-center py-8 text-zinc-400 bg-zinc-50 border border-dashed border-zinc-200">
+                                    <p className="text-sm font-medium">Syllabus has not been uploaded yet.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* My Doubts History */}
+                    <div className="bg-white border border-zinc-200 hover:border-zinc-900 transition-colors">
+                        <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
+                            <h2 className="text-lg font-heading font-bold uppercase tracking-tight flex items-center gap-2 text-zinc-900">
+                                <MessageCircle className="text-zinc-900" size={20} />
+                                My Doubts
+                            </h2>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 bg-zinc-100 border border-zinc-200 px-2 py-1">
+                                {myDoubts.length} Total
+                            </span>
+                        </div>
+                        <div className="divide-y divide-zinc-100">
+                            {loadingDoubts ? (
+                                <div className="p-6 text-center">
+                                    <div className="inline-block animate-spin h-5 w-5 border-2 border-zinc-900 border-t-transparent"></div>
+                                </div>
+                            ) : myDoubts.length > 0 ? (
+                                myDoubts.map((doubt) => (
+                                    <div key={doubt.id} className="p-5 hover:bg-zinc-50 transition-colors group">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <p className="text-sm text-zinc-800 font-medium flex-1">{doubt.question}</p>
+                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 border text-[10px] font-bold uppercase tracking-wider shrink-0 ${doubt.status === "resolved"
+                                                    ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                                                    : "bg-amber-50 text-amber-600 border-amber-200"
+                                                }`}>
+                                                {doubt.status === "resolved" ? <CheckCircle size={10} /> : <Clock size={10} />}
+                                                {doubt.status}
+                                            </span>
+                                        </div>
+                                        {doubt.faculty_answer && (
+                                            <div className="mt-3 pl-4 border-l-2 border-zinc-200">
+                                                <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">Faculty Reply</p>
+                                                <p className="text-sm text-zinc-600">{doubt.faculty_answer}</p>
+                                            </div>
+                                        )}
+                                        {doubt.created_at && (
+                                            <p className="text-[10px] text-zinc-400 mt-2 font-mono">
+                                                {new Date(doubt.created_at).toLocaleString()}
+                                            </p>
+                                        )}
+                                    </div>
+                                ))
+                                ) : (
+                                <div className="p-8 text-center text-zinc-400">
+                                    <p className="text-sm font-medium">No doubts asked yet. Use the panel on the right to ask your first question!</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                {/* Right Column: Actions & Doubts */}
+                {/* Right Column: Ask Doubt */}
                 <div className="space-y-6">
-                    <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg">
-                        <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
-                            <HelpCircle className="text-blue-200" />
-                            Have a Doubt?
-                        </h2>
-                        <p className="text-blue-100 text-sm mb-6">
-                            Ask your instructor directly. Get clarifications on topics you find difficult.
-                        </p>
-                        <button 
-                            onClick={() => setDoubtOpen(true)}
-                            className="w-full py-3 bg-white text-blue-600 font-bold rounded-xl shadow-md hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
-                        >
-                            Ask Question
-                        </button>
+                    <div className="bg-zinc-900 border border-zinc-900 text-white">
+                        <div className="p-6">
+                            <h2 className="text-lg font-heading font-bold mb-2 flex items-center gap-2 uppercase tracking-tight">
+                                <HelpCircle className="text-zinc-400" size={20} />
+                                Have a Doubt?
+                            </h2>
+                            <p className="text-zinc-400 text-xs font-medium uppercase tracking-wide mb-6">
+                                Ask your instructor directly. Get clarifications on topics you find difficult.
+                            </p>
+                            <button
+                                onClick={() => setDoubtOpen(true)}
+                                className="w-full py-3 bg-white text-zinc-900 font-heading font-bold text-xs uppercase tracking-widest hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2"
+                            >
+                                Ask Question
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Doubt Modal (Inline or Global) */}
-                    {doubtOpen && (
-                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-                                <div className="p-6 border-b border-gray-100 dark:border-slate-800">
-                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Ask a Doubt</h2>
-                                    <p className="text-sm text-gray-500 mt-1">Post your question to the course instructor.</p>
-                                </div>
-                                <form onSubmit={handleSubmitDoubt} className="p-6 space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Your Question</label>
-                                        <textarea 
-                                            required
-                                            value={doubtQuestion}
-                                            onChange={(e) => setDoubtQuestion(e.target.value)}
-                                            className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:bg-slate-800 dark:border-slate-700 dark:text-white h-32"
-                                            placeholder="Type your question here..."
-                                        />
+                    {/* Course Info Card */}
+                    {(course.department || course.semester || course.code) && (
+                        <div className="bg-white border border-zinc-200 hover:border-zinc-900 transition-colors">
+                            <div className="p-6 border-b border-zinc-100">
+                                <h3 className="text-sm font-heading font-bold uppercase tracking-widest text-zinc-500">Course Info</h3>
+                            </div>
+                            <div className="p-6 space-y-4">
+                                {course.code && (
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Code</span>
+                                        <span className="text-sm font-mono font-bold text-zinc-900">{course.code}</span>
                                     </div>
-                                    <div className="flex justify-end gap-3 pt-4">
-                                        <button 
-                                            type="button"
-                                            onClick={() => setDoubtOpen(false)}
-                                            className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg font-medium transition-colors"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button 
-                                            type="submit"
-                                            disabled={submittingDoubt}
-                                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-lg shadow-blue-500/20 disabled:opacity-70 flex items-center gap-2"
-                                        >
-                                            {submittingDoubt && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
-                                            Submit Question
-                                        </button>
+                                )}
+                                {course.department && (
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Department</span>
+                                        <span className="text-sm font-mono font-bold text-zinc-900">{course.department}</span>
                                     </div>
-                                </form>
+                                )}
+                                {course.semester && (
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Semester</span>
+                                        <span className="text-sm font-mono font-bold text-zinc-900">{course.semester}</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
                 </div>
             </div>
+
+            {/* Doubt Modal */}
+            {doubtOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-900/40 backdrop-blur-sm p-4">
+                    <div className="bg-white border border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-6 border-b border-zinc-200 flex justify-between items-start">
+                            <div>
+                                <h2 className="text-xl font-heading font-bold text-zinc-900 uppercase tracking-tight">Ask a Doubt</h2>
+                                <p className="text-xs text-zinc-500 mt-1 font-medium">Post query to course instructor.</p>
+                            </div>
+                            <button onClick={() => setDoubtOpen(false)} className="text-zinc-400 hover:text-zinc-900 transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleSubmitDoubt} className="p-6 space-y-6">
+                            <div>
+                                <label className="block text-xs font-bold text-zinc-900 uppercase tracking-wider mb-2">Your Question</label>
+                                <textarea
+                                    required
+                                    value={doubtQuestion}
+                                    onChange={(e) => setDoubtQuestion(e.target.value)}
+                                    className="w-full bg-zinc-50 border border-zinc-200 focus:border-zinc-900 p-4 h-32 outline-none transition-colors text-sm font-medium resize-none placeholder:text-zinc-400"
+                                    placeholder="TYPE YOUR QUESTION HERE..."
+                                />
+                            </div>
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setDoubtOpen(false)}
+                                    className="px-6 py-3 text-zinc-600 hover:text-zinc-900 border border-transparent hover:border-zinc-200 font-heading font-bold text-xs uppercase tracking-widest transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={submittingDoubt}
+                                    className="px-6 py-3 bg-zinc-900 hover:bg-zinc-800 text-white font-heading font-bold text-xs uppercase tracking-widest shadow-lg flex items-center gap-2 transition-all disabled:opacity-70"
+                                >
+                                    {submittingDoubt && <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
+                                    SUBMIT
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

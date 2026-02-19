@@ -33,7 +33,7 @@ function SkeletonLine({ wide }) {
 }
 
 export default function ProfilePage() {
-    const { user, userUid } = useAuth();
+    const { user, userUid, setProfileName } = useAuth();
     const [profile, setProfile] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -116,6 +116,8 @@ export default function ProfilePage() {
                     ...form,
                     risk_status: data.risk_status,
                 }));
+                // Update sidebar name immediately
+                if (form.name) setProfileName(form.name);
             } else {
                 setSaveMessage({ type: "error", text: data.message || "Failed to save." });
             }

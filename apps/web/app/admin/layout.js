@@ -4,7 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { LayoutDashboard, Users, BookOpen, Settings, LogOut, Menu, X, Bell, Shield } from "lucide-react";
+import { LayoutDashboard, Users, BookOpen, Settings, LogOut, Menu, X, Bell, Shield, GraduationCap } from "lucide-react";
 
 export default function AdminLayout({ children }) {
   const { user, userRole, loading, logout } = useAuth();
@@ -24,8 +24,8 @@ export default function AdminLayout({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 from-gray-50 to-slate-50 bg-gradient-to-br">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-slate-800"></div>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-zinc-900 border-t-transparent"></div>
       </div>
     );
   }
@@ -38,7 +38,7 @@ export default function AdminLayout({ children }) {
     { name: "Overview", href: "/admin", icon: LayoutDashboard },
     { name: "Students", href: "/admin/students", icon: Users },
     { name: "Courses", href: "/admin/courses", icon: BookOpen },
-    { name: "Curriculum", href: "/admin/curriculum", icon: BookOpen },
+    { name: "Curriculum", href: "/admin/curriculum", icon: GraduationCap },
     { name: "Settings", href: "/admin/settings", icon: Settings },
   ];
 
@@ -47,42 +47,35 @@ export default function AdminLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col md:flex-row font-sans text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen bg-white flex flex-col md:flex-row font-sans text-zinc-900">
       {/* Mobile Header */}
-      <div className="md:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-slate-800 p-4 flex justify-between items-center sticky top-0 z-40">
+      <div className="md:hidden bg-white border-b border-zinc-200 p-4 flex justify-between items-center sticky top-0 z-40">
         <div className="flex items-center gap-2">
-            <Shield size={20} className="text-red-600" />
-            <span className="font-bold text-xl text-slate-800 dark:text-white">
+          <span className="font-heading font-bold text-xl uppercase tracking-tighter border-2 border-zinc-900 px-2 py-0.5">
             Manan Admin
             </span>
         </div>
-        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-slate-800">
+        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 hover:bg-zinc-100 border border-transparent hover:border-zinc-200 transition-colors">
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
-      {/* Sidebar - Distinct Dark Theme for Admin */}
+      {/* Sidebar - Zinc Theme */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-white transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-zinc-200 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="h-full flex flex-col p-6">
             {/* Logo */}
-          <div className="mb-8 hidden md:flex items-center gap-3">
-            <div className="bg-red-600 p-2 rounded-lg">
-                <Shield size={20} className="text-white" />
-            </div>
-            <div>
-                <h1 className="font-bold text-xl text-white tracking-tight">
-                Manan AI
-                </h1>
-                <span className="text-xs font-semibold bg-white/10 text-white/70 px-2 py-0.5 rounded ml-[-1px]">ADMIN MODE</span>
-            </div>
+          <div className="mb-10 hidden md:block">
+            <h1 className="font-heading font-bold text-2xl uppercase tracking-tighter border-l-4 border-zinc-900 pl-3">
+              Manan Admin
+            </h1>
           </div>
 
           {/* Nav Links */}
-          <nav className="flex-1 space-y-2">
+          <nav className="flex-1 space-y-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               const Icon = item.icon;
@@ -90,40 +83,40 @@ export default function AdminLayout({ children }) {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                  className={`flex items-center gap-3 px-4 py-3 border border-transparent transition-all duration-200 group ${
                     isActive
-                      ? "bg-red-600 text-white shadow-lg shadow-red-900/40"
-                      : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                    ? "bg-zinc-900 text-white border-zinc-900"
+                    : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 hover:border-zinc-200"
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <Icon size={20} className={isActive ? "" : "group-hover:translate-x-1 transition-transform"} />
-                  <span className="font-medium">{item.name}</span>
+                  <span className="font-heading font-medium tracking-wide text-sm uppercase">{item.name}</span>
                 </Link>
               );
             })}
           </nav>
 
           {/* User Profile & Logout */}
-          <div className="mt-auto pt-6 border-t border-slate-800">
-            <div className="flex items-center gap-3 mb-4 px-2">
-                <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold border border-slate-700">
+          <div className="mt-auto pt-6 border-t border-zinc-200">
+            <div className="flex items-center gap-3 mb-6 px-2">
+              <div className="w-10 h-10 bg-zinc-100 border border-zinc-200 flex items-center justify-center text-zinc-900 font-bold font-heading">
                 {user.email ? user.email[0].toUpperCase() : "A"}
                 </div>
                 <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate text-white">
-                  {user.displayName || "Admin"}
+                <p className="text-sm font-bold truncate text-zinc-900 font-heading tracking-tight">
+                  {user.displayName || "Administrator"}
                     </p>
-                    <p className="text-xs text-slate-500 truncate">
+                <p className="text-xs text-zinc-500 truncate font-mono">
                   {user.email}
                     </p>
                 </div>
             </div>
             <button 
                 onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-2 text-red-400 hover:bg-red-950/30 rounded-lg transition-colors text-sm font-medium"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 text-zinc-600 hover:text-white hover:bg-red-600 border border-zinc-200 hover:border-red-600 transition-colors text-xs font-bold uppercase tracking-widest"
             >
-                <LogOut size={18} />
+              <LogOut size={16} />
                 <span>Sign Out</span>
             </button>
           </div>
@@ -133,28 +126,28 @@ export default function AdminLayout({ children }) {
       {/* Overlay for mobile */}
       {isMobileMenuOpen && (
         <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 md:hidden"
+          className="fixed inset-0 bg-zinc-900/20 backdrop-blur-sm z-30 md:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 dark:bg-slate-950">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-white">
         {/* Top Navbar */}
-        <header className="h-16 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between px-6 md:px-8 shadow-sm">
-            <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+        <header className="h-16 bg-white border-b border-zinc-200 flex items-center justify-between px-6 md:px-8 shrink-0">
+          <h2 className="font-heading text-lg font-bold uppercase tracking-tight text-zinc-900">
                 Dashboard Overview
             </h2>
             <div className="flex items-center gap-4">
-                 <button className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-slate-800 rounded-full transition relative">
+            <button className="p-2 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 border border-transparent hover:border-zinc-200 transition relative">
                     <Bell size={20} />
-                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
                 </button>
             </div>
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-auto p-4 md:p-8">
+        <div className="flex-1 overflow-auto p-4 md:p-8 bg-zinc-50/30">
             <div className="w-full max-w-[1600px] mx-auto">
                 {children}
             </div>
