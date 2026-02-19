@@ -1,52 +1,47 @@
 "use client";
 
-import { FileText, Mic, Upload, ArrowRight, Sparkles, CheckCircle2, Loader2, Star, X } from "lucide-react";
+import { FileText, Mic, Upload, ArrowRight, Sparkles, CheckCircle2, Loader2, Star, X, Brain, AlertCircle, XCircle, CheckCircle } from "lucide-react";
 import { useState, useRef } from "react";
 
 const API_BASE = "http://127.0.0.1:8000";
 
 export default function CareerPage() {
+    // --- Resume Roaster State ---
     const [isDragging, setIsDragging] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [analysisResult, setAnalysisResult] = useState(null);
     const [uploadedFileName, setUploadedFileName] = useState(null);
     const fileInputRef = useRef(null);
 
-    const handleDragOver = (e) => {
-        e.preventDefault();
-        setIsDragging(true);
-    };
+    // --- Mock Test State ---
+    const [quizStatus, setQuizStatus] = useState("idle"); // idle, config, loading, active, finished
+    const [quizConfig, setQuizConfig] = useState({ subject: "", topic: "" });
+    const [questions, setQuestions] = useState([]);
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [userAnswers, setUserAnswers] = useState({}); // { index: "option value" }
+    const [quizScore, setQuizScore] = useState(0);
 
-    const handleDragLeave = () => {
-        setIsDragging(false);
-    };
-
+    // --- Resume Handlers ---
+    const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
+    const handleDragLeave = () => { setIsDragging(false); };
     const handleDrop = (e) => {
         e.preventDefault();
         setIsDragging(false);
         const file = e.dataTransfer.files?.[0];
         if (file) processFile(file);
     };
-
     const handleFileInputChange = (e) => {
         const file = e.target.files?.[0];
         if (file) processFile(file);
     };
-
     const processFile = async (file) => {
         setUploadedFileName(file.name);
         setAnalysisResult(null);
         setIsUploading(true);
-
         try {
             const formData = new FormData();
             formData.append("file", file);
-
-            const res = await fetch(`${API_BASE}/analyze-resume`, {
-                method: "POST",
-                body: formData,
-            });
-
+            const res = await fetch(`${API_BASE}/analyze-resume`, { method: "POST", body: formData });
             if (res.ok) {
                 const data = await res.json();
                 setAnalysisResult(data);
@@ -55,16 +50,70 @@ export default function CareerPage() {
             }
         } catch (err) {
             console.error("Resume upload error:", err);
-            setAnalysisResult({ score: 0, feedback: ["Could not connect to the server. Is the API running?"] });
+            setAnalysisResult({ score: 0, feedback: ["Could not connect to the server."] });
         } finally {
             setIsUploading(false);
         }
     };
-
     const getScoreColor = (score) => {
         if (score >= 75) return { text: "text-green-600", bg: "bg-green-100", ring: "ring-green-500", label: "Excellent" };
         if (score >= 50) return { text: "text-yellow-600", bg: "bg-yellow-100", ring: "ring-yellow-500", label: "Good" };
         return { text: "text-red-600", bg: "bg-red-100", ring: "ring-red-500", label: "Needs Work" };
+    };
+
+    // --- Quiz Handlers ---
+    const startQuizConfig = () => setQuizStatus("config");
+    
+    const fetchQuiz = async (e) => {
+        e.preventDefault();
+        setQuizStatus("loading");
+        try {
+            const res = await fetch(`${API_BASE}/generate-quiz`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(quizConfig)
+            });
+            const data = await res.json();
+            if (data.status === "success" && data.quiz) {
+                setQuestions(data.quiz);
+                setCurrentQuestionIndex(0);
+                setUserAnswers({});
+                setQuizStatus("active");
+            } else {
+                alert(data.message || "Failed to generate quiz. Please try again.");
+                setQuizStatus("idle");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Error generating quiz: " + error.message);
+            setQuizStatus("idle");
+        }
+    };
+
+    const handleAnswerSelect = (option) => {
+        setUserAnswers(prev => ({ ...prev, [currentQuestionIndex]: option }));
+    };
+
+    const nextQuestion = () => {
+        if (currentQuestionIndex < questions.length - 1) {
+            setCurrentQuestionIndex(prev => prev + 1);
+        }
+    };
+
+    const submitQuiz = () => {
+        let score = 0;
+        questions.forEach((q, idx) => {
+            if (userAnswers[idx] === q.answer) score++;
+        });
+        setQuizScore(score);
+        setQuizStatus("finished");
+    };
+
+    const resetQuiz = () => {
+        setQuizStatus("idle");
+        setQuizConfig({ subject: "", topic: "" });
+        setUserAnswers({});
+        setQuestions([]);
     };
 
     return (
@@ -157,8 +206,6 @@ export default function CareerPage() {
                                         <X size={16} />
                                     </button>
                                 </div>
-
-                                {/* Score Badge */}
                                 {(() => {
                                     const sc = getScoreColor(analysisResult.score);
                                     return (
@@ -171,8 +218,6 @@ export default function CareerPage() {
                                         </div>
                                     );
                                 })()}
-
-                                {/* Feedback bullets */}
                                 <ul className="space-y-2">
                                     {analysisResult.feedback.map((point, i) => (
                                         <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
@@ -186,35 +231,190 @@ export default function CareerPage() {
                     </div>
                 </div>
 
-                {/* Card B: Mock Interview */}
-                <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-32 bg-purple-500/5 rounded-full blur-3xl -mr-16 -mt-16 transition-opacity opacity-50 group-hover:opacity-100"></div>
-
+                {/* Card B: Mock Test (Replaces Mock Interview) */}
+                <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all relative overflow-hidden flex flex-col">
+                    <div className="absolute top-0 right-0 p-32 bg-purple-500/5 rounded-full blur-3xl -mr-16 -mt-16 transition-opacity opacity-50"></div>
                     <div className="relative z-10 flex flex-col h-full">
-                        <div className="w-14 h-14 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
-                            <Mic size={28} />
-                        </div>
+                        
+                        {/* Header Area */}
+                        {(quizStatus === "idle" || quizStatus === "config") && (
+                            <>
+                                <div className="w-14 h-14 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
+                                    <Brain size={28} />
+                                </div>
+                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">AI Mock Test</h2>
+                                <p className="text-gray-500 dark:text-gray-400 mb-6">
+                                    Generate personalized quizzes on any subject. Test your knowledge with AI-crafted questions and get instant feedback.
+                                </p>
+                            </>
+                        )}
 
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Mock Interview</h2>
-                        <p className="text-gray-500 dark:text-gray-400 mb-8">
-                            Practice behavioral and technical interviews with voice AI. Simulate real pressure and receive instant feedback on your answers.
-                        </p>
-
-                        <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 dark:bg-slate-800/50 rounded-2xl p-6 mb-6">
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-2 h-8 bg-purple-500 rounded-full animate-pulse delay-75"></div>
-                                <div className="w-2 h-12 bg-purple-600 rounded-full animate-pulse delay-150"></div>
-                                <div className="w-2 h-6 bg-purple-400 rounded-full animate-pulse delay-100"></div>
-                                <div className="w-2 h-10 bg-purple-500 rounded-full animate-pulse delay-200"></div>
+                        {/* IDLE STATE */}
+                        {quizStatus === "idle" && (
+                            <div className="mt-auto">
+                                <div className="space-y-3 mb-6">
+                                    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-800/50 rounded-xl">
+                                        <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 font-bold text-sm">1</div>
+                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Choose Topic</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-800/50 rounded-xl">
+                                        <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 font-bold text-sm">2</div>
+                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Take Quiz</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-800/50 rounded-xl">
+                                        <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 font-bold text-sm">3</div>
+                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">View Results</span>
+                                    </div>
+                                </div>
+                                <button onClick={startQuizConfig} className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all transform hover:-translate-y-1">
+                                    <Brain size={20} />
+                                    Generate New Quiz
+                                    <ArrowRight size={20} />
+                                </button>
                             </div>
-                            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">&quot;Tell me about a time you failed...&quot;</p>
-                        </div>
+                        )}
 
-                        <button className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all transform hover:-translate-y-1">
-                            <Mic size={20} />
-                            Start Interview Session
-                            <ArrowRight size={20} />
-                        </button>
+                        {/* CONFIG STATE */}
+                        {quizStatus === "config" && (
+                            <form onSubmit={fetchQuiz} className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subject</label>
+                                    <input 
+                                        required
+                                        type="text" 
+                                        placeholder="e.g. Computer Science, History"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                                        value={quizConfig.subject}
+                                        onChange={e => setQuizConfig({...quizConfig, subject: e.target.value})}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Topic</label>
+                                    <input 
+                                        required
+                                        type="text" 
+                                        placeholder="e.g. Data Structures, WWII"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                                        value={quizConfig.topic}
+                                        onChange={e => setQuizConfig({...quizConfig, topic: e.target.value})}
+                                    />
+                                </div>
+                                <div className="flex gap-3 pt-2">
+                                    <button type="button" onClick={() => setQuizStatus("idle")} className="flex-1 py-3 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-800 rounded-xl font-medium transition-colors">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-lg transition-colors">
+                                        Start Quiz
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                        
+                        {/* LOADING STATE */}
+                        {quizStatus === "loading" && (
+                             <div className="flex-1 flex flex-col items-center justify-center text-center animate-in fade-in">
+                                 <Loader2 size={48} className="text-purple-600 animate-spin mb-4" />
+                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Generating Quiz...</h3>
+                                 <p className="text-gray-500 text-sm">Crafting questions on {quizConfig.topic}</p>
+                             </div>
+                        )}
+
+                        {/* ACTIVE STATE */}
+                        {quizStatus === "active" && questions.length > 0 && (
+                            <div className="flex-1 flex flex-col animate-in fade-in">
+                                <div className="flex justify-between items-center mb-6">
+                                    <span className="text-sm font-bold text-purple-600 bg-purple-50 dark:bg-purple-900/20 px-3 py-1 rounded-full">
+                                        Question {currentQuestionIndex + 1} / {questions.length}
+                                    </span>
+                                    <span className="text-xs text-gray-400">Time: Unlimited</span>
+                                </div>
+                                
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 leading-relaxed">
+                                    {questions[currentQuestionIndex].question}
+                                </h3>
+
+                                <div className="space-y-3 mb-8">
+                                    {questions[currentQuestionIndex].options.map((option, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => handleAnswerSelect(option)}
+                                            className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                                                userAnswers[currentQuestionIndex] === option
+                                                    ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 font-medium"
+                                                    : "border-gray-100 dark:border-slate-800 hover:border-purple-200 hover:bg-gray-50 dark:hover:bg-slate-800/50"
+                                            }`}
+                                        >
+                                            <span className="mr-3 font-mono text-gray-400 dark:text-gray-500">{String.fromCharCode(65 + idx)}.</span>
+                                            {option}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="mt-auto flex justify-end">
+                                    {currentQuestionIndex < questions.length - 1 ? (
+                                        <button 
+                                            onClick={nextQuestion}
+                                            disabled={!userAnswers[currentQuestionIndex]}
+                                            className="px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                                        >
+                                            Next Question
+                                        </button>
+                                    ) : (
+                                        <button 
+                                            onClick={submitQuiz}
+                                            disabled={!userAnswers[currentQuestionIndex]}
+                                            className="px-6 py-3 bg-purple-600 text-white font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/20"
+                                        >
+                                            Submit Quiz
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* FINISHED STATE */}
+                        {quizStatus === "finished" && (
+                            <div className="flex-1 flex flex-col animate-in fade-in space-y-6 overflow-y-auto max-h-[500px] custom-scrollbar pr-2">
+                                <div className="text-center">
+                                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 mb-4">
+                                        <span className="text-3xl font-black">{Math.round((quizScore / questions.length) * 100)}%</span>
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Quiz Completed!</h2>
+                                    <p className="text-gray-500 text-sm">You got {quizScore} out of {questions.length} correct.</p>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <h3 className="font-bold text-sm uppercase tracking-wider text-gray-500">Review Breakdown</h3>
+                                    {questions.map((q, idx) => {
+                                        const isCorrect = userAnswers[idx] === q.answer;
+                                        return (
+                                            <div key={idx} className={`p-4 rounded-xl border ${isCorrect ? "border-green-100 bg-green-50 dark:bg-green-900/10 dark:border-green-900/30" : "border-red-100 bg-red-50 dark:bg-red-900/10 dark:border-red-900/30"}`}>
+                                                <div className="flex items-start gap-3">
+                                                    {isCorrect ? <CheckCircle className="text-green-500 flex-shrink-0 mt-1" size={18} /> : <XCircle className="text-red-500 flex-shrink-0 mt-1" size={18} />}
+                                                    <div>
+                                                        <p className="font-medium text-gray-900 dark:text-white text-sm mb-2">{q.question}</p>
+                                                        {!isCorrect && (
+                                                            <div className="text-xs text-red-600 dark:text-red-400 mb-1">
+                                                                <span className="font-bold">Your Ans:</span> {userAnswers[idx]}
+                                                            </div>
+                                                        )}
+                                                        <div className="text-xs text-green-600 dark:text-green-400">
+                                                            <span className="font-bold">Correct:</span> {q.answer}
+                                                        </div>
+                                                        <p className="text-xs text-gray-500 mt-2 italic border-t border-gray-200/50 dark:border-slate-700/50 pt-2">{q.explanation}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                <button onClick={resetQuiz} className="w-full py-3 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">
+                                    Take Another Quiz
+                                </button>
+                            </div>
+                        )}
+
                     </div>
                 </div>
             </div>
