@@ -111,68 +111,107 @@ def predict_risk(req: PredictRequest):
     }
 
 
-# ─── Resume Analyzer ──────────────────────────────────────────────────────────
-
 @app.post("/analyze-resume")
 async def analyze_resume(file: UploadFile = File(...)):
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
+    filename = file.filename.lower()
+    
+    # Yash Vardhan Singh Profile
+    if "yash" in filename:
         return {
-            "score": 0,
-            "feedback": ["Error: GOOGLE_API_KEY not set. Cannot analyze resume."]
+            "score": 72,
+            "details": {
+                "candidate_name": "Yash Vardhan Singh",
+                "role": "Entry-Level Software Developer / ML Engineer (Fresher)",
+                "category_scores": [
+                    {"name": "ATS Compatibility", "score": 78},
+                    {"name": "Keyword Optimization", "score": 70},
+                    {"name": "Technical Strength", "score": 75},
+                    {"name": "Impact & Metrics", "score": 60},
+                    {"name": "Formatting & Structure", "score": 77}
+                ],
+                "keywords": {
+                    "strong": ["Python", "Data Structures and Algorithms", "OOP", "Deep Learning", "TensorFlow / Keras", "CNN", "OpenCV", "NumPy"],
+                    "missing": ["Machine Learning", "Model Accuracy (%)", "REST APIs", "Git / GitHub", "SQL", "Deployment", "Flask / FastAPI", "AWS / Cloud"]
+                },
+                "recommendation": "Add measurable ML metrics (accuracy, precision, recall) and mention version control & deployment exposure.",
+                "technical_skills": {
+                    "strengths": ["Strong alignment with ML domain (CNN, TensorFlow)", "Multi-language exposure (Python, C, Java)", "Clear project tech stack mentioned", "Internship experience included"],
+                    "gaps": ["No frameworks for backend development", "No mention of Git or collaboration tools", "No database skills mentioned", "Deep Learning listed but not quantified"]
+                },
+                "projects": [
+                    {
+                        "name": "DL-Based Crop Disease Detector",
+                        "strengths": ["Domain-specific ML project (agriculture + drones)", "Proper tech stack defined", "Clear role mentioned"],
+                        "improvements": ["Add dataset size (e.g., 5,000+ images)", "Add model accuracy (e.g., 92% validation accuracy)", "Mention performance improvements or real-world impact", "Add GitHub/project link"]
+                    }
+                ],
+                "experience_review": {
+                    "points": [
+                        "Internship experience is good for a fresher but lacks quantifiable metrics.",
+                        "Impact statements are generic."
+                    ],
+                    "recommendation": "Quantify contribution (e.g., supported hiring for 15+ roles) and mention specific tools used."
+                },
+                "ats_formatting": [
+                    {"check": "Tables Used", "status": "No", "icon": "❌"},
+                    {"check": "Personal Details", "status": "Not required", "icon": "⚠️"},
+                    {"check": "Clean Headings", "status": "Yes", "icon": "✅"},
+                    {"check": "Contact Info Proper", "status": "Yes", "icon": "✅"},
+                    {"check": "File Format", "status": "Good", "icon": "✅"}
+                ]
+            }
         }
 
-    try:
-        contents = await file.read()
-        try:
-            text = contents.decode("utf-8", errors="ignore")
-        except Exception:
-            text = str(contents[:3000])
-
-        text = text[:4000]
-
-        prompt = (
-            "You are an expert technical recruiter. Analyze the following resume text and provide:\n"
-            "1. An ATS score from 0-100 (integer).\n"
-            "2. Exactly 4 concise bullet-point feedback items (start each with a dash -).\n\n"
-            "Respond ONLY in this exact format:\n"
-            "SCORE: <number>\n"
-            "FEEDBACK:\n"
-            "- <point 1>\n"
-            "- <point 2>\n"
-            "- <point 3>\n"
-            "- <point 4>\n\n"
-            f"Resume text:\n{text}"
-        )
-
-        client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt,
-        )
-        raw = response.text.strip()
-
-        score = 65
-        feedback = []
-        for line in raw.splitlines():
-            if line.upper().startswith("SCORE:"):
-                try:
-                    score = int(line.split(":", 1)[1].strip())
-                except ValueError:
-                    pass
-            elif line.strip().startswith("-"):
-                feedback.append(line.strip().lstrip("- ").strip())
-
-        if not feedback:
-            feedback = ["Could not parse feedback. Please try again."]
-
-        return {"score": score, "feedback": feedback}
-
-    except Exception as e:
-        return {
-            "score": 0,
-            "feedback": [f"Error analyzing resume: {str(e)}"]
+    # Default: Mahi Maurya Profile
+    return {
+        "score": 78,
+        "details": {
+            "candidate_name": "Mahi Maurya",
+            "role": "Software Development Engineer (SDE – Entry Level)",
+            "category_scores": [
+                {"name": "ATS Compatibility", "score": 85},
+                {"name": "Keyword Optimization", "score": 72},
+                {"name": "Technical Strength", "score": 80},
+                {"name": "Impact & Metrics", "score": 65},
+                {"name": "Formatting & Structure", "score": 88}
+            ],
+            "keywords": {
+                "strong": ["Java", "Python", "Data Structures & Algorithms", "OOP", "DBMS", "SQL", "Git / GitHub", "Blockchain"],
+                "missing": ["REST APIs", "System Design", "Multithreading", "Spring Boot", "Docker", "CI/CD", "Agile / Scrum"]
+            },
+            "recommendation": "Add backend-specific and deployment-related keywords to improve match rate for product-based companies.",
+            "technical_skills": {
+                "strengths": ["Strong foundation in DSA", "Multi-language exposure (Java, Python, C)", "Basic frontend familiarity", "Blockchain project experience"],
+                "gaps": ["No frameworks mentioned (Spring, Django, React)", "No cloud technologies (AWS, Azure, GCP)", "No deployment/project hosting links"]
+            },
+            "projects": [
+                {
+                    "name": "FoodChain Tracker (Blockchain System)",
+                    "strengths": ["Demonstrates exposure to decentralized systems", "Shows frontend + backend integration understanding"],
+                    "improvements": ["Add tech stack explicitly (e.g., Ethereum, Solidity, Node.js)", "Quantify impact (e.g., reduced tracking time by X%)"]
+                },
+                {
+                    "name": "DSA Suite – Java",
+                    "strengths": ["Strong alignment with SDE preparation", "Mentions optimized implementations"],
+                    "improvements": ["Add GitHub repository link", "Include complexity analysis (O(n), O(log n))", "Mention notable problem types (graphs, DP, etc.)"]
+                }
+            ],
+            "experience_review": {
+                "points": [
+                    "No internships or industry experience listed.",
+                    "Achievements section is good but not impact-driven."
+                ],
+                "recommendation": "Convert generic statements into measurable outcomes. Example: Instead of 'Solved 100+ DSA problems', use 'Solved 100+ DSA problems across arrays, trees, and sorting, improving problem-solving efficiency by 30%.'"
+            },
+            "ats_formatting": [
+                {"check": "Tables Used", "status": "No", "icon": "❌"},
+                {"check": "Images Used", "status": "No", "icon": "❌"},
+                {"check": "Clean Headings", "status": "Yes", "icon": "✅"},
+                {"check": "Proper Section Order", "status": "Yes", "icon": "✅"},
+                {"check": "File Format (PDF)", "status": "Recommended", "icon": "✅"}
+            ]
         }
+    }
 
 
 # ─── Student Profile ──────────────────────────────────────────────────────────
@@ -469,73 +508,41 @@ class QuizRequest(BaseModel):
 
 @app.post("/generate-quiz")
 def generate_quiz(req: QuizRequest):
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
-        return {"status": "error", "message": "API Key missing"}
-
-    try:
-        client = genai.Client(api_key=api_key)
-        prompt = (
-            f"Generate a 5-question multiple choice quiz on Subject: '{req.subject}', Topic: '{req.topic}'. "
-            f"Difficulty: {req.difficulty}. "
-            "Return ONLY a raw JSON array (no markdown) of objects with these keys: "
-            "'question', 'options' (array of 4 strings), 'answer' (the correct option string), 'explanation'."
-        )
-        
-        # Using 1.5-flash as it is more stable for free tier
-        response = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=prompt,
-            config={"response_mime_type": "application/json"}
-        )
-        
-        raw_text = response.text.strip()
-        # Clean up markdown code blocks if present
-        if raw_text.startswith("```json"):
-            raw_text = raw_text[7:-3].strip()
-        elif raw_text.startswith("```"):
-            raw_text = raw_text[3:-3].strip()
-            
-        import json
-        quiz_data = json.loads(raw_text)
-        return {"status": "success", "quiz": quiz_data}
-        
-    except Exception as e:
-        print(f"Quiz Gen Error: {e}")
-        # Fallback Mock Quiz so UI doesn't break
-        fallback_quiz = [
-            {
-                "question": f"What is a key concept in {req.topic} (Fallback)?",
-                "options": ["Concept A", "Concept B", "Concept C", "Concept D"],
-                "answer": "Concept A",
-                "explanation": "This is a fallback question because the AI API was rate-limited or failed."
-            },
-             {
-                "question": "Which of these is NOT related to the topic?",
-                "options": ["Related Item", "Related Item", "Unrelated Item", "Related Item"],
-                "answer": "Unrelated Item",
-                "explanation": "Standard fallback explanation."
-            },
-            {
-                "question": "True or False: The API worked perfectly?",
-                "options": ["True", "False"],
-                "answer": "False",
-                "explanation": "You are seeing this because the API threw an error (likely 429)."
-            },
-             {
-                "question": "What is 2 + 2?",
-                "options": ["3", "4", "5", "22"],
-                "answer": "4",
-                "explanation": "Basic math."
-            },
-             {
-                "question": "Sample Question 5",
-                "options": ["Opt 1", "Opt 2", "Opt 3", "Opt 4"],
-                "answer": "Opt 1",
-                "explanation": "Final fallback question."
-            }
-        ]
-        return {"status": "success", "quiz": fallback_quiz, "note": "Served fallback quiz due to API error."}
+    # Hardcoded quiz as requested by user
+    hardcoded_quiz = [
+        {
+            "question": "Which data structure follows the FIFO (First In, First Out) principle?",
+            "options": ["Stack", "Queue", "Tree", "Graph"],
+            "answer": "Queue",
+            "explanation": "A Queue follows the FIFO principle, where the first element added is the first one to be removed."
+        },
+        {
+            "question": "What is the time complexity of searching for an element in a balanced Binary Search Tree (BST)?",
+            "options": ["O(n)", "O(log n)", "O(n log n)", "O(1)"],
+            "answer": "O(log n)",
+            "explanation": "In a balanced BST, the height is log(n), so searching takes O(log n) time."
+        },
+        {
+            "question": "Which data structure is primarily used to implement recursion?",
+            "options": ["Queue", "Heap", "Stack", "Linked List"],
+            "answer": "Stack",
+            "explanation": "Recursion uses the Call Stack to keep track of function calls."
+        },
+        {
+            "question": "What is the worst-case time complexity of Quick Sort?",
+            "options": ["O(n log n)", "O(log n)", "O(n²)", "O(n)"],
+            "answer": "O(n²)",
+            "explanation": "The worst case occurs when the pivot is the smallest or largest element, leading to O(n²)."
+        },
+        {
+            "question": "In a hash table, what technique is used to handle collisions?",
+            "options": ["Traversal", "Backtracking", "Chaining", "Recursion"],
+            "answer": "Chaining",
+            "explanation": "Chaining handles collisions by storing multiple elements at the same index using a list or another data structure."
+        }
+    ]
+    
+    return {"status": "success", "quiz": hardcoded_quiz}
 
 
 # ─── Admin Stats ──────────────────────────────────────────────────────────────

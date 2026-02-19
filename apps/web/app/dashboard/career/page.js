@@ -11,6 +11,7 @@ export default function CareerPage() {
     const [isUploading, setIsUploading] = useState(false);
     const [analysisResult, setAnalysisResult] = useState(null);
     const [uploadedFileName, setUploadedFileName] = useState(null);
+    const [selectedFile, setSelectedFile] = useState(null);
     const fileInputRef = useRef(null);
 
     // --- Mock Test State ---
@@ -28,19 +29,27 @@ export default function CareerPage() {
         e.preventDefault();
         setIsDragging(false);
         const file = e.dataTransfer.files?.[0];
-        if (file) processFile(file);
+        if (file) {
+            setSelectedFile(file);
+            setUploadedFileName(file.name);
+            setAnalysisResult(null);
+        }
     };
     const handleFileInputChange = (e) => {
         const file = e.target.files?.[0];
-        if (file) processFile(file);
+        if (file) {
+            setSelectedFile(file);
+            setUploadedFileName(file.name);
+            setAnalysisResult(null);
+        }
     };
-    const processFile = async (file) => {
-        setUploadedFileName(file.name);
-        setAnalysisResult(null);
+
+    const analyzeResume = async () => {
+        if (!selectedFile) return;
         setIsUploading(true);
         try {
             const formData = new FormData();
-            formData.append("file", file);
+            formData.append("file", selectedFile);
             const res = await fetch(`${API_BASE}/analyze-resume`, { method: "POST", body: formData });
             if (res.ok) {
                 const data = await res.json();
@@ -55,6 +64,7 @@ export default function CareerPage() {
             setIsUploading(false);
         }
     };
+
     const getScoreColor = (score) => {
         if (score >= 75) return { text: "text-green-600", bg: "bg-green-100", ring: "ring-green-500", label: "Excellent" };
         if (score >= 50) return { text: "text-yellow-600", bg: "bg-yellow-100", ring: "ring-yellow-500", label: "Good" };
@@ -154,8 +164,7 @@ export default function CareerPage() {
 
                         {/* Dropzone */}
                         <div
-                            className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-all cursor-pointer relative overflow-hidden ${isDragging ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" : "border-gray-200 dark:border-slate-700 hover:border-blue-400 hover:bg-blue-50/30 bg-gray-50 dark:bg-slate-800/50"
-                                }`}
+                            className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-all cursor-pointer relative overflow-hidden ${isDragging ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" : "border-gray-200 dark:border-slate-700 hover:border-blue-400 hover:bg-blue-50/30 bg-gray-50 dark:bg-slate-800/50"}`}
                             onDragOver={handleDragOver}
                             onDragLeave={handleDragLeave}
                             onDrop={handleDrop}
@@ -174,12 +183,28 @@ export default function CareerPage() {
                                     </div>
                                     <p className="font-medium text-gray-900 dark:text-white">Click to upload or drag &amp; drop</p>
                                     <p className="text-xs text-gray-400 mt-1">PDF, DOCX, or TXT (Max 5MB)</p>
-                                    {uploadedFileName && !analysisResult && (
-                                        <p className="text-xs text-blue-500 mt-2 font-medium">{uploadedFileName}</p>
+                                    {uploadedFileName && (
+                                        <div className="mt-3 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-lg border border-blue-100 dark:border-blue-800">
+                                            <p className="text-sm font-bold text-blue-600 flex items-center gap-2">
+                                                <FileText size={16} />
+                                                {uploadedFileName}
+                                            </p>
+                                        </div>
                                     )}
                                 </>
                             )}
                         </div>
+                        
+                        {/* Analyze Button */}
+                        {selectedFile && !isUploading && !analysisResult && (
+                            <button 
+                                onClick={analyzeResume}
+                                className="mt-4 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2"
+                            >
+                                <Sparkles size={20} />
+                                Analyze Resume
+                            </button>
+                        )}
 
                         {/* Feature tags */}
                         <div className="mt-4 flex flex-wrap gap-2">
@@ -193,39 +218,128 @@ export default function CareerPage() {
 
                         {/* Report Card */}
                         {analysisResult && (
-                            <div className="mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="flex items-center justify-between mb-3">
-                                    <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                        <Star size={16} className="text-yellow-500" />
-                                        AI Report Card
-                                    </h3>
+                            <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                        <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                            <Star size={20} className="text-yellow-500 fill-yellow-500" />
+                                            Analysis Report
+                                        </h3>
+                                        <p className="text-sm text-gray-500">{analysisResult.details.candidate_name} • {analysisResult.details.role}</p>
+                                    </div>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); setAnalysisResult(null); setUploadedFileName(null); }}
-                                        className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 hover:text-gray-600 transition"
+                                        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 hover:text-gray-600 transition"
                                     >
-                                        <X size={16} />
+                                        <X size={20} />
                                     </button>
                                 </div>
+
+                                {/* Score Badge */}
                                 {(() => {
                                     const sc = getScoreColor(analysisResult.score);
                                     return (
-                                        <div className={`flex items-center gap-4 p-4 rounded-2xl ${sc.bg} ring-1 ${sc.ring} mb-4`}>
-                                            <div className={`text-4xl font-black ${sc.text}`}>{analysisResult.score}</div>
-                                            <div>
-                                                <p className={`font-bold ${sc.text}`}>{sc.label}</p>
-                                                <p className="text-xs text-gray-500">ATS Score / 100</p>
+                                        <div className={`flex items-center gap-6 p-6 rounded-3xl ${sc.bg} ring-1 ${sc.ring}`}>
+                                            <div className={`text-6xl font-black ${sc.text}`}>{analysisResult.score}</div>
+                                            <div className="flex-1">
+                                                <p className={`text-xl font-bold ${sc.text} mb-1`}>{sc.label}</p>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">Overall ATS Compatibility Score</p>
                                             </div>
                                         </div>
                                     );
                                 })()}
-                                <ul className="space-y-2">
-                                    {analysisResult.feedback.map((point, i) => (
-                                        <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                                            <span className="mt-1 w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></span>
-                                            {point}
-                                        </li>
+
+                                {/* Category Breakdown */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {analysisResult.details.category_scores.map((cat, i) => (
+                                        <div key={i} className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-xl flex justify-between items-center">
+                                            <span className="font-medium text-gray-700 dark:text-gray-300 text-sm">{cat.name}</span>
+                                            <span className="font-bold text-gray-900 dark:text-white">{cat.score}%</span>
+                                        </div>
                                     ))}
-                                </ul>
+                                </div>
+
+                                {/* Keywords */}
+                                <div className="space-y-4">
+                                    <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <Sparkles size={18} className="text-purple-500" />
+                                        Keyword Analysis
+                                    </h4>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <p className="text-xs font-bold text-green-600 mb-2 uppercase tracking-wider">✅ Strong Matches</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {analysisResult.details.keywords.strong.map((k, i) => (
+                                                    <span key={i} className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full">{k}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-red-500 mb-2 uppercase tracking-wider">❌ Missing Keywords</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {analysisResult.details.keywords.missing.map((k, i) => (
+                                                    <span key={i} className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-semibold rounded-full">{k}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                                        <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">💡 Recommendation</p>
+                                        <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">{analysisResult.details.recommendation}</p>
+                                    </div>
+                                </div>
+
+                                {/* Projects Review */}
+                                <div className="space-y-4">
+                                    <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <FileText size={18} className="text-blue-500" />
+                                        Project Evaluation
+                                    </h4>
+                                    <div className="space-y-4">
+                                        {analysisResult.details.projects.map((proj, i) => (
+                                            <div key={i} className="border border-gray-100 dark:border-slate-800 rounded-xl p-4">
+                                                <h5 className="font-bold text-gray-900 dark:text-white mb-2">{proj.name}</h5>
+                                                <div className="space-y-2">
+                                                    <div>
+                                                        <span className="text-xs font-bold text-green-600">Strengths:</span>
+                                                        <p className="text-sm text-gray-600 dark:text-gray-400">{proj.strengths.join(", ")}</p>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-xs font-bold text-orange-500">Improvement:</span>
+                                                        <p className="text-sm text-gray-600 dark:text-gray-400">{proj.improvements.join(", ")}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* ATS Checks Table */}
+                                <div className="space-y-2">
+                                    <h4 className="font-bold text-gray-900 dark:text-white">📑 ATS Formatting Check</h4>
+                                    <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800 overflow-hidden">
+                                        <table className="w-full text-sm text-left">
+                                            <thead className="bg-gray-50 dark:bg-slate-800">
+                                                <tr>
+                                                    <th className="px-4 py-3 font-medium text-gray-500">Check</th>
+                                                    <th className="px-4 py-3 font-medium text-gray-500 text-right">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+                                                {analysisResult.details.ats_formatting.map((item, i) => (
+                                                    <tr key={i}>
+                                                        <td className="px-4 py-3 text-gray-900 dark:text-white">{item.check}</td>
+                                                        <td className="px-4 py-3 text-right font-medium">
+                                                            <span className={`inline-flex items-center gap-1 ${item.icon === "✅" ? "text-green-600" : "text-gray-500"}`}>
+                                                                {item.icon} {item.status}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>
