@@ -6,9 +6,28 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from google import genai
-from firebase_admin import firestore, auth
+import firebase_admin
+from firebase_admin import credentials, firestore, auth
 
 load_dotenv()
+
+# ─── Initialize Firebase Admin SDK ────────────────────────────────────────────
+_service_account_path = os.getenv(
+    "FIREBASE_SERVICE_ACCOUNT_PATH",
+    "nova-scholar-f10d5-firebase-adminsdk-fbsvc-9ac6252f8f.json"
+)
+
+if not firebase_admin._apps:
+    if os.path.exists(_service_account_path):
+        _cred = credentials.Certificate(_service_account_path)
+        firebase_admin.initialize_app(_cred)
+        print(f"✅ Firebase Admin initialized with: {_service_account_path}")
+    else:
+        print(f"⚠️  Service account not found: {_service_account_path}")
+
+db = firestore.client()
+
+# ─── FastAPI App ──────────────────────────────────────────────────────────────
 
 app = FastAPI(title="Nova Scholar API")
 
@@ -185,8 +204,6 @@ async def sync_user(request: UserSyncRequest):
         decoded_token = auth.verify_id_token(request.token)
         uid = decoded_token["uid"]
         email = decoded_token.get("email", "")
-
-        from firebase_config import db
 
         user_ref = db.collection("users").document(uid)
         user_doc = user_ref.get()

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useRef } from "react";
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
@@ -19,6 +19,7 @@ export const AuthProvider = ({ children }) => {
     const [userRole, setUserRole] = useState(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
+    const skipAutoSyncRef = useRef(false);
 
     // Sync user role with backend
     const syncUserRole = async (firebaseUser, selectedRole = "student") => {
@@ -51,12 +52,16 @@ export const AuthProvider = ({ children }) => {
         let unsubscribe = () => { };
         try {
             unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+                // Skip auto-sync if signUp or signIn is handling it
+                if (skipAutoSyncRef.current) {
+                    setLoading(false);
+                    return;
+                }
                 if (currentUser) {
                     const role = await syncUserRole(currentUser);
                     if (role) {
                         setUser(currentUser);
                     } else {
-                        // Sync failed — sign out stale session
                         try { await signOut(auth); } catch (_) { }
                         setUser(null);
                         setUserRole(null);
@@ -76,16 +81,28 @@ export const AuthProvider = ({ children }) => {
 
     // Sign up with email/password
     const signUp = async (email, password, role) => {
-        const result = await createUserWithEmailAndPassword(auth, email, password);
-        const syncedRole = await syncUserRole(result.user, role);
-        return { user: result.user, role: syncedRole };
+        skipAutoSyncRef.current = true;
+        try {
+            const result = await createUserWithEmailAndPassword(auth, email, password);
+            const syncedRole = await syncUserRole(result.user, role);
+            setUser(result.user);
+            return { user: result.user, role: syncedRole };
+        } finally {
+            skipAutoSyncRef.current = false;
+        }
     };
 
     // Sign in with email/password
     const signIn = async (email, password) => {
-        const result = await signInWithEmailAndPassword(auth, email, password);
-        const syncedRole = await syncUserRole(result.user);
-        return { user: result.user, role: syncedRole };
+        skipAutoSyncRef.current = true;
+        try {
+            const result = await signInWithEmailAndPassword(auth, email, password);
+            const syncedRole = await syncUserRole(result.user);
+            setUser(result.user);
+            return { user: result.user, role: syncedRole };
+        } finally {
+            skipAutoSyncRef.current = false;
+        }
     };
 
     const logout = async () => {

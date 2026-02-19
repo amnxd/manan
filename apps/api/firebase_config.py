@@ -1,5 +1,5 @@
 import firebase_admin
-from firebase_admin import credentials, firestore, auth
+from firebase_admin import credentials, firestore, auth as firebase_auth
 import os
 from dotenv import load_dotenv
 
@@ -16,18 +16,14 @@ def initialize_firebase():
             firebase_admin.initialize_app(cred)
             print(f"Firebase Admin initialized with service account: {service_account_path}")
         else:
-            # Fallback to default credentials (useful for GCP environments)
-            # or try to use environment variables for credentials if set
-            print("Service account not found. Using default credentials or checking other env vars.")
+            print(f"WARNING: Service account not found at {service_account_path}")
             try:
                 firebase_admin.initialize_app()
             except Exception as e:
-                print(f"Failed to initialize Firebase Admin with default credentials: {e}")
-                # For local dev without creds, some features might not work, 
-                # but we'll allow it to pass so the app doesn't crash immediately 
-                # if the user hasn't set up auth yet.
+                print(f"Failed to initialize Firebase Admin: {e}")
                 pass
     
     return firestore.client()
 
 db = initialize_firebase()
+auth = firebase_auth
