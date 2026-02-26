@@ -35,6 +35,7 @@ app = FastAPI(title="Manan API")
 # CORS Configuration
 origins = [
     "http://localhost:3000",
+    "https://manan-iota.vercel.app",
 ]
 
 app.add_middleware(
