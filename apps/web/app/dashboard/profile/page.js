@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { User, Mail, GraduationCap, Save, Award, Calendar, Shield, Loader2, Phone, Hash, Github, Linkedin, BookOpen, AlertTriangle, CheckCircle, TrendingUp } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://manan-383u.onrender.com";
 
 // Simple internal icon components
 function TrendingUpIcon({ size, className }) {

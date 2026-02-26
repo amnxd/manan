@@ -11,7 +11,7 @@ export default function CurriculumPage() {
 
     useEffect(() => {
         if (user) {
-            fetch("http://127.0.0.1:8000/courses")
+            fetch("https://manan-383u.onrender.com/courses")
                 .then(res => res.json())
                 .then(data => {
                     if (data.courses) {
@@ -56,7 +56,7 @@ export default function CurriculumPage() {
 
         try {
             const token = await user.getIdToken();
-            const res = await fetch(`http://127.0.0.1:8000/courses/${courseId}/syllabus`, {
+            const res = await fetch(`https://manan-383u.onrender.com/courses/${courseId}/syllabus`, {
                  method: "POST",
                  headers: { "Content-Type": "application/json" },
                  body: JSON.stringify({ token, file_url: "https://example.com/mock-syllabus.pdf" })
@@ -79,7 +79,7 @@ export default function CurriculumPage() {
 
         try {
             const token = await user.getIdToken();
-            const res = await fetch(`http://127.0.0.1:8000/courses/${courseId}?token=${token}`, {
+            const res = await fetch(`https://manan-383u.onrender.com/courses/${courseId}?token=${token}`, {
                 method: "DELETE"
             });
             const data = await res.json();

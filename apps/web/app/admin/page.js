@@ -5,7 +5,7 @@ import { Users, AlertCircle, HelpCircle, Send, TrendingUp, AlertTriangle, BookOp
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useAuth } from "../../context/AuthContext";
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://manan-383u.onrender.com";
 
 export default function AdminDashboardPage() {
     const [notificationSent, setNotificationSent] = useState(false);

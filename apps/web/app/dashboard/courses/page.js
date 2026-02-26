@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { BookOpen, PlayCircle, Clock, Calendar, CheckCircle, ArrowRight, X } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://manan-383u.onrender.com";
 
 export default function CoursesPage() {
     const { user } = useAuth();

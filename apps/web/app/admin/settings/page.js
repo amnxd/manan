@@ -4,7 +4,7 @@ import { Settings, Shield, ToggleLeft, ToggleRight, Save, Bell, Loader2, CheckCi
 import { useState, useEffect } from "react";
 import { useAuth } from "../../../context/AuthContext";
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://manan-383u.onrender.com";
 
 export default function AdminSettingsPage() {
     const { user } = useAuth();

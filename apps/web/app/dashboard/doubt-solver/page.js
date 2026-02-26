@@ -33,7 +33,7 @@ export default function DoubtSolverPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/solve-doubt", {
+      const response = await fetch("https://manan-383u.onrender.com/solve-doubt", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

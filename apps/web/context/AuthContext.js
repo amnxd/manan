@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 
 const AuthContext = createContext();
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://manan-383u.onrender.com";
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);

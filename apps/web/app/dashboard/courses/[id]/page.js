@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "../../../../context/AuthContext";
 import { BookOpen, FileText, ArrowLeft, HelpCircle, Send, CheckCircle, Clock, X, MessageCircle } from "lucide-react";
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://manan-383u.onrender.com";
 
 export default function CourseDetailPage() {
     const { id } = useParams();

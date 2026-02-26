@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { TrendingUp, AlertTriangle, CheckCircle, Clock, Loader2, ArrowRight } from "lucide-react";
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://manan-383u.onrender.com";
 
 export default function DashboardPage() {
     // --- Widget A: Academic Predictor State ---

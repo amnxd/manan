@@ -3,7 +3,7 @@
 import { FileText, Mic, Upload, ArrowRight, Sparkles, CheckCircle2, Loader2, Star, X, Brain, AlertCircle, XCircle, CheckCircle } from "lucide-react";
 import { useState, useRef } from "react";
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://manan-383u.onrender.com";
 
 export default function CareerPage() {
     // --- Resume Roaster State ---
