@@ -1121,41 +1121,128 @@ class QuizRequest(BaseModel):
 
 @app.post("/generate-quiz")
 def generate_quiz(req: QuizRequest):
-    # Hardcoded quiz as requested by user
-    hardcoded_quiz = [
-        {
-            "question": "Which data structure follows the FIFO (First In, First Out) principle?",
-            "options": ["Stack", "Queue", "Tree", "Graph"],
-            "answer": "Queue",
-            "explanation": "A Queue follows the FIFO principle, where the first element added is the first one to be removed."
-        },
-        {
-            "question": "What is the time complexity of searching for an element in a balanced Binary Search Tree (BST)?",
-            "options": ["O(n)", "O(log n)", "O(n log n)", "O(1)"],
-            "answer": "O(log n)",
-            "explanation": "In a balanced BST, the height is log(n), so searching takes O(log n) time."
-        },
-        {
-            "question": "Which data structure is primarily used to implement recursion?",
-            "options": ["Queue", "Heap", "Stack", "Linked List"],
-            "answer": "Stack",
-            "explanation": "Recursion uses the Call Stack to keep track of function calls."
-        },
-        {
-            "question": "What is the worst-case time complexity of Quick Sort?",
-            "options": ["O(n log n)", "O(log n)", "O(n²)", "O(n)"],
-            "answer": "O(n²)",
-            "explanation": "The worst case occurs when the pivot is the smallest or largest element, leading to O(n²)."
-        },
-        {
-            "question": "In a hash table, what technique is used to handle collisions?",
-            "options": ["Traversal", "Backtracking", "Chaining", "Recursion"],
-            "answer": "Chaining",
-            "explanation": "Chaining handles collisions by storing multiple elements at the same index using a list or another data structure."
-        }
-    ]
+    # Extensive Hardcoded Quizzes for specific subjects
+    SUGGESTED_QUIZZES = {
+        "Computer Science Data Structures": [
+            {
+                "question": "Which data structure follows the FIFO (First In, First Out) principle?",
+                "options": ["Stack", "Queue", "Tree", "Graph"],
+                "answer": "Queue",
+                "explanation": "A Queue follows the FIFO principle, where the first element added is the first one to be removed."
+            },
+            {
+                "question": "What is the time complexity of searching for an element in a balanced Binary Search Tree (BST)?",
+                "options": ["O(n)", "O(log n)", "O(n log n)", "O(1)"],
+                "answer": "O(log n)",
+                "explanation": "In a balanced BST, the height is log(n), so searching takes O(log n) time."
+            },
+            {
+                "question": "Which data structure is primarily used to implement recursion?",
+                "options": ["Queue", "Heap", "Stack", "Linked List"],
+                "answer": "Stack",
+                "explanation": "Recursion uses the Call Stack to keep track of function calls."
+            },
+            {
+                "question": "In a hash table, what technique is used to handle collisions?",
+                "options": ["Traversal", "Backtracking", "Chaining", "Recursion"],
+                "answer": "Chaining",
+                "explanation": "Chaining handles collisions by storing multiple elements at the same index using a list or another data structure."
+            }
+        ],
+        "Computer Science Algorithms": [
+            {
+                 "question": "What is the worst-case time complexity of Quick Sort?",
+                 "options": ["O(n log n)", "O(log n)", "O(n²)", "O(n)"],
+                 "answer": "O(n²)",
+                 "explanation": "The worst case occurs when the pivot is the smallest or largest element, leading to O(n²)."
+            },
+            {
+                 "question": "Which algorithm paradigm does Dijkstra's shortest path algorithm follow?",
+                 "options": ["Dynamic Programming", "Greedy", "Divide and Conquer", "Backtracking"],
+                 "answer": "Greedy",
+                 "explanation": "Dijkstra's continually picks the absolute smallest known distance to explore next, a hallmark of greedy algorithms."
+            },
+            {
+                 "question": "What algorithm operates by repeatedly dividing the array in half?",
+                 "options": ["Bubble Sort", "Linear Search", "Binary Search", "Selection Sort"],
+                 "answer": "Binary Search",
+                 "explanation": "Binary search finds the position of a target value within a sorted array by comparing the target to the middle element."
+            }
+        ],
+        "Computer Science Networking": [
+            {
+                 "question": "Which Protocol is considered 'Connectionless'?",
+                 "options": ["TCP", "FTP", "UDP", "HTTP"],
+                 "answer": "UDP",
+                 "explanation": "User Datagram Protocol (UDP) sends messages (datagrams) without requiring a handshake to establish a connection first."
+            },
+            {
+                 "question": "At which OSI Layer does IP (Internet Protocol) operate?",
+                 "options": ["Data Link Layer", "Network Layer", "Transport Layer", "Session Layer"],
+                 "answer": "Network Layer",
+                 "explanation": "The Network Layer (Layer 3) handles packet routing across networks, which is the primary job of the IP."
+            },
+            {
+                  "question": "What port does standard unencrypted HTTP traffic run on?",
+                  "options": ["80", "443", "22", "21"],
+                  "answer": "80",
+                  "explanation": "Port 80 is the default TCP port for unencrypted HTTP traffic. HTTPS uses 443."
+            }
+        ],
+        "History World War II": [
+            {
+                 "question": "In what year did World War II officially begin?",
+                 "options": ["1914", "1939", "1941", "1945"],
+                 "answer": "1939",
+                 "explanation": "WWII began on September 1, 1939, when Germany invaded Poland."
+            },
+            {
+                 "question": "Which country was NOT part of the Axis powers?",
+                 "options": ["Germany", "Japan", "Italy", "Soviet Union"],
+                 "answer": "Soviet Union",
+                 "explanation": "The Soviet Union was part of the Allied powers for the majority of the war."
+            },
+            {
+                  "question": "What was the code name for the Allied invasion of Normandy?",
+                  "options": ["Operation Barbarossa", "Operation Overlord", "Project Manhattan", "Operation Sealion"],
+                  "answer": "Operation Overlord",
+                  "explanation": "Operation Overlord was the massive amphibious assault launched on D-Day (June 6, 1944)."
+            }
+        ],
+        "Automotive Engines": [
+             {
+                 "question": "What is the purpose of a spark plug in an internal combustion engine?",
+                 "options": ["To inject fuel", "To ignite the air/fuel mixture", "To pump oil", "To cool the engine"],
+                 "answer": "To ignite the air/fuel mixture",
+                 "explanation": "In petrol engines, the spark plug provides the spark that causes the compressed air and fuel to combust."
+             },
+             {
+                 "question": "Which component connects the pistons to the crankshaft?",
+                 "options": ["Camshaft", "Timing Belt", "Connecting Rods", "Valves"],
+                 "answer": "Connecting Rods",
+                 "explanation": "Connecting rods transfer the linear motion of the pistons into rotational motion along the crankshaft."
+             }
+        ]
+    }
     
-    return {"status": "success", "quiz": hardcoded_quiz}
+    # Fuzzy match user input against our bank
+    user_query = f"{req.subject} {req.topic}".lower().strip()
+    
+    best_match_key = None
+    best_match_score = 0
+    
+    for key in SUGGESTED_QUIZZES.keys():
+        score = fuzz.token_set_ratio(user_query, key.lower())
+        if score > best_match_score:
+            best_match_score = score
+            best_match_key = key
+            
+    # Tuning Threshold
+    if best_match_score >= 60 and best_match_key:
+        return {"status": "success", "quiz": SUGGESTED_QUIZZES[best_match_key]}
+
+    # Fallback to a default computer science quiz if no matching topic is found to avoid crashing
+    return {"status": "success", "quiz": SUGGESTED_QUIZZES["Computer Science Data Structures"]}
 
 
 # ─── Admin Stats ──────────────────────────────────────────────────────────────

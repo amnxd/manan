@@ -383,6 +383,29 @@ export default function CareerPage() {
                         {/* CONFIG STATE */}
                         {quizStatus === "config" && (
                             <form onSubmit={fetchQuiz} className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+
+                                <div className="mb-4">
+                                    <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">💡 Quick Start Suggestions</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {[
+                                            { s: "Computer Science", t: "Data Structures", icon: "💻" },
+                                            { s: "Computer Science", t: "Algorithms", icon: "🧮" },
+                                            { s: "Computer Science", t: "Networking", icon: "🌐" },
+                                            { s: "History", t: "World War II", icon: "🎖️" },
+                                            { s: "Automotive", t: "Engines", icon: "🚗" }
+                                        ].map((item, idx) => (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => setQuizConfig({ subject: item.s, topic: item.t })}
+                                                className="border border-zinc-200 bg-white hover:bg-zinc-50 hover:border-zinc-900 px-3 py-1.5 text-xs font-bold text-zinc-700 transition-colors flex items-center gap-1.5"
+                                            >
+                                                <span>{item.icon}</span> {item.t}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
                                 <div>
                                     <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1.5">Subject</label>
                                     <input 
