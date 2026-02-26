@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }) {
       {/* Mobile Header */}
       <div className="md:hidden bg-white border-b border-zinc-200 p-4 flex justify-between items-center z-40 shrink-0">
         <span className="font-heading font-bold text-xl uppercase tracking-tighter border-2 border-zinc-900 px-2 py-0.5">
-          Manan AI
+          Manan
         </span>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 hover:bg-zinc-100 border border-transparent hover:border-zinc-200 transition-colors">
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -48,7 +48,7 @@ export default function DashboardLayout({ children }) {
             {/* Logo */}
           <div className="mb-10 hidden md:block">
             <h1 className="font-heading font-bold text-2xl uppercase tracking-tighter border-l-4 border-zinc-900 pl-3">
-              Manan AI
+              Manan
             </h1>
           </div>
 

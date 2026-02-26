@@ -1,1 +1,1 @@
-print("Manan AI Agent - Active")
+print("Manan Agent - Active")

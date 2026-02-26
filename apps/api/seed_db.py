@@ -1,5 +1,5 @@
 """
-seed_db.py — Seed Firestore with dummy data for Manan AI
+seed_db.py — Seed Firestore with dummy data for Manan
 Run: python seed_db.py
 """
 
@@ -355,7 +355,7 @@ def seed_resume_reviews():
 # 3. Run All Seeders
 # ──────────────────────────────────────────────
 if __name__ == "__main__":
-    print("\n--- Starting Manan AI DB Seeder ---\n")
+    print("\n--- Starting Manan DB Seeder ---\n")
     seed_users()
     seed_courses()
     seed_doubts()

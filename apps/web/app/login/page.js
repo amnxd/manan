@@ -64,7 +64,7 @@ export default function LoginPage() {
                 {/* Logo / Header */}
                 <div className="mb-10 text-center">
                     <h1 className="font-heading font-bold text-3xl uppercase tracking-tighter border-zinc-900 inline-block px-1">
-                        Manan AI
+                        Manan
                     </h1>
                     <p className="mt-2 text-xs font-bold text-zinc-500 uppercase tracking-widest">
                         Student Portal

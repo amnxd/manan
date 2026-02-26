@@ -77,7 +77,7 @@ export default function AdminSettingsPage() {
                   <Settings className="text-zinc-900" />
             System Configuration
         </h1>
-              <p className="text-xs text-zinc-500 mb-8 ml-9 font-medium uppercase tracking-wide">Manage global settings for the Manan AI platform</p>
+              <p className="text-xs text-zinc-500 mb-8 ml-9 font-medium uppercase tracking-wide">Manage global settings for the Manan platform</p>
 
         {/* Section 1: System Controls */}
         <div className="space-y-6">

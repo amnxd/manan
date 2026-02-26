@@ -80,7 +80,7 @@ export default function AskManan() {
               <div className="w-8 h-8 flex items-center justify-center border border-white/20">
                 <Sparkles size={16} />
               </div>
-              <span className="font-heading font-bold uppercase tracking-widest text-sm">Manan AI</span>
+              <span className="font-heading font-bold uppercase tracking-widest text-sm">Manan</span>
             </div>
             <button
               onClick={toggleChat}

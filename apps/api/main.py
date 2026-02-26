@@ -30,7 +30,7 @@ db = firestore.client()
 
 # ─── FastAPI App ──────────────────────────────────────────────────────────────
 
-app = FastAPI(title="Manan AI API")
+app = FastAPI(title="Manan API")
 
 # CORS Configuration
 origins = [

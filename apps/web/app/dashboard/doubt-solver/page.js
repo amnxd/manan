@@ -224,7 +224,7 @@ export default function DoubtSolverPage() {
           </form>
           <div className="bg-zinc-50 border-t border-zinc-100 mt-0 pt-2 pb-0">
              <p className="text-center text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                Manan AI can make mistakes. Verify important information.
+              Manan can make mistakes. Verify important information.
             </p>
           </div>
         </div>

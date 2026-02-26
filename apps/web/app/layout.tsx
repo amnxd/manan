@@ -16,8 +16,15 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Manan AI",
+  title: "Manan",
   description: "AI-powered learning platform",
+};
+
+export const viewport = {
+  themeColor: "#ffffff",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({
