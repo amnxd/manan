@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from google import genai
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
+from thefuzz import fuzz
 
 load_dotenv()
 
@@ -135,6 +136,205 @@ When you open a website:
 (Application → Presentation → Session → Transport → Network → Data Link → Physical)
 """
 
+# Hardcoded Responses for Suggested Questions
+SUGGESTED_DOUBTS = {
+    "Explain quantum computing in simple terms": {
+        "text": """
+🌌 **Quantum Computing, Simplified**
+
+Imagine you have a giant maze, and you need to find the specific path that leads to the exit.
+
+💻 **A Classical Computer (Your PC/Phone):**
+Runs through the maze **one path at a time**. If it hits a dead end, it backs up and tries the next path. Eventually, it finds the exit, but for complex mazes, this takes an incredibly long time.
+
+🧮 **A Quantum Computer:**
+Can miraculously run through **ALL paths in the maze at the exact same time**. It finds the exit almost instantly.
+
+---
+
+### ⚛️ **The Core Concepts**
+
+1️⃣ **Qubits (Quantum Bits)**
+- Classical bits are either a `0` or a `1` (like a light switch: Off or On).
+- **Qubits** can be a `0`, a `1`, or **both simultaneously**. Imagine a spinning coin — while it's spinning in the air, you can't say if it's heads or tails until you catch it. This is called **Superposition**.
+
+2️⃣ **Entanglement**
+- Qubits can become mathematically linked. If you change the state of one qubit, its linked partner instantly changes too, even if millions of miles away! Einstein famously called this "spooky action at a distance."
+
+3️⃣ **Interference**
+- Quantum computers use waves to naturally cancel out the wrong answers (destructive interference) and amplify the correct probability (constructive interference), quickly filtering out noise to get the right answer.
+
+### 🚀 **Why Does This Matter?**
+Quantum computers aren't meant to just be faster versions of your phone. They are purpose-built to solve highly specific, radically complex problems that would take normal computers millions of years:
+- **Medicine:** Simulating complex molecular structures to instantly invent new drugs.
+- **Security:** Breaking modern cryptography (and inventing totally unhackable encryption).
+- **Logistics:** Instantly calculating the most perfectly efficient global shipping routes.
+""",
+        "citations": ["Quantum Computing Physics", "Qubits and Superposition"]
+    },
+    
+    "Help me understand recursion": {
+        "text": """
+🔄 **Understanding Recursion**
+
+**Recursion** in computer science is simply when a function calls **itself** in order to solve a problem.
+
+Imagine you are standing in a long line, and you want to know what position you are in. You could tap the person in front of you and ask *"What number are you?"* 
+They don't know either, so they tap the person in front of them, and so on... until the very first person at the front is asked. 
+The first person confidently says: *"I am number 1."* (This is the **Base Case**).
+The second person now knows they are 1 + 1 = 2. They pass that back.
+The information ripples back to you, and you find out your position. 
+
+That is exactly how a recursive algorithm works!
+
+---
+
+### 🧱 **The Two Rules of Recursion**
+Every successful recursive function must have two things:
+
+1️⃣ **The Base Case (The stop condition):**
+A simple condition where the function stops calling itself and returns a value immediately. If you forget this, the function calls itself forever (creating an Infinite Loop / Stack Overflow!)
+
+2️⃣ **The Recursive Step (The breakdown):**
+The code logic that breaks the large problem into a slightly smaller piece, and calls itself.
+
+---
+
+### 💻 **A Classic Example: Factorials (Python)**
+
+A factorial in math: `5! = 5 * 4 * 3 * 2 * 1`
+As a rule: `n! = n * (n - 1)!` 
+
+Notice how calculating the factorial of `n` requires knowing the factorial of `n-1`? That's perfect for recursion:
+
+```python
+def calculate_factorial(n):
+    # Rule 1: The Base Case
+    if n == 1 or n == 0:
+        return 1
+        
+    # Rule 2: The Recursive Step
+    return n * calculate_factorial(n - 1)
+
+print(calculate_factorial(5)) # Outputs 120
+```
+
+### 🧠 When to Use It?
+Recursion shines when dealing with data structures that branch out, like **Trees** or **Graphs**, or sorting algorithms like **Merge Sort** and **Quick Sort**!
+""",
+        "citations": ["Computer Science Algorithms", "Python Recursion"]
+    },
+    
+    "What is the difference between TCP and UDP?": {
+        "text": """
+🌐 **TCP vs. UDP: Two Ways to Send Data**
+
+When your computer communicates over the internet, it sends data in tiny chunks called **packets**. At the Transport Layer of networking, two main protocols dictate *how* these packets are delivered: **TCP** and **UDP**.
+
+---
+
+### 📦 **1. TCP (Transmission Control Protocol)**
+**The Delivery Service with Signature Tracking**
+
+Think of TCP like sending a highly valuable registered package via FedEx. 
+- You want to guarantee 100% that the package arrives.
+- The mail carrier requests a signature. 
+- If the package is lost or damaged on the way, the system automatically replaces it and resends it.
+
+**Key Features of TCP:**
+- ✅ **Reliable:** Guarantees absolute, flawless delivery of data.
+- ✅ **Ordered:** Reassembles packets in the exact correct order. 
+- ✅ **Connection-Oriented:** Establishes a formal "handshake" before sending data.
+- ❌ **Slower:** All that checking and verifying creates overhead and takes time.
+
+**Real-world Use Cases:**
+- Loading webpages (HTTP/HTTPS)
+- Sending Emails (SMTP)
+- Downloading files (FTP)
+*(If you download a picture, you don't want a chunk in the middle missing or out of order!)*
+
+---
+
+### 🚤 **2. UDP (User Datagram Protocol)**
+**The Postcard Thrown out the Window**
+
+Think of UDP like standing at a parade throwing out candy. 
+- You toss the candy out as fast as possible.
+- You don't care if a few pieces hit the ground or if someone misses catching one.
+- The goal is maximum speed, zero stopping to check.
+
+**Key Features of UDP:**
+- ✅ **Fast:** Incredibly low latency and less overhead.
+- ❌ **Unreliable:** Does not guarantee delivery. Packets can just be dropped and lost forever.
+- ❌ **Unordered:** Packets can arrive entirely out of order.
+- ❌ **Connectionless:** Just starts blasting packets immediately without a handshake.
+
+**Real-world Use Cases:**
+- Live Video Streaming / Twitch / YouTube Live
+- Voice calls (Discord, Zoom)
+- Online Multiplayer Gaming (Valorant, Call of Duty)
+*(If a video frame is dropped during a live Zoom call, it's better to immediately skip to the next frame than to awkwardly pause the entire call while waiting for the missing frame to redownload!)*
+""",
+         "citations": ["Networking Protocols", "Transport Layer Data Transfer"]
+    },
+    
+    "Explain Big O notation with examples": {
+         "text": """
+⏱️ **Understanding Big O Notation**
+
+**Big O Notation** is a mathematical way of describing the efficiency of an algorithm. 
+Specifically, it measures two things as the input size (n) gets larger and larger:
+1. **Time Complexity:** How much longer does it take to run?
+2. **Space Complexity:** How much more memory does it require?
+
+Instead of measuring code in seconds (because a supercomputer runs the same code faster than a smartwatch), we measure code by the **number of operations** it must perform!
+
+---
+
+### 📈 **Common Big O Complexities (From Best to Worst)**
+
+#### 🟢 **1. O(1) - Constant Time**
+No matter how massive the input data gets, the code takes the exact same amount of time. It happens instantly.
+- **Example:** Picking up the 5th book off a shelf, whether the shelf has 10 books or 10 million books.
+```python
+def return_first_element(arr):
+    return arr[0]  # Instant lookup!
+```
+
+#### 🟡 **2. O(log n) - Logarithmic Time**
+Extremely efficient. Even if the data doubles, operations only increase by 1. Data is halved at every step.
+- **Example:** Using a phonebook. Looking for "Smith". You open to the middle ("M"), realize "S" is in the second half, rip the book in half, and repeat. You find it very fast.
+- **Commonly found in:** Binary Search.
+
+#### 🟠 **3. O(n) - Linear Time**
+The time required scales completely linearly with the input data. If data goes up 10x, time goes up 10x.
+- **Example:** Reading every single page of a book one by one until you find a specific quote.
+```python
+def find_number(arr, target):
+    for num in arr:
+        if num == target:
+            return True # Has to check every single item at worst
+```
+
+#### 🔴 **4. O(n²) - Quadratic Time**
+Terrible efficiency. The time it takes squares as the input increases. If data increases 10x, time taken increases 100x.
+- **Example:** A nested loop. Having 10 people in a room shake hands with every other person in the room (90 handshakes).
+```python
+def print_pairs(arr):
+    for i in arr:
+        for j in arr: # Loop inside a loop!
+            print(i, j) 
+```
+- **Commonly found in:** Inefficient sorting algorithms like Bubble Sort.
+
+---
+### 🛠️ **Summary Rule of Thumb**
+When writing software architecture, we always try to avoid O(n²) and optimize towards **O(log n)** and **O(n)** where possible! It's the difference between your app taking 0.1 seconds vs 300 years to query a database of millions of users!
+""",
+         "citations": ["Algorithm Complexities", "Performance Optimization"]
+    }
+}
+
 class DoubtRequest(BaseModel):
     student_id: str
     question_text: str
@@ -155,10 +355,30 @@ def solve_doubt(request: DoubtRequest):
     except:
         pass # Fail open if DB error, or log it
 
-    if "osi" in request.question_text.lower():
+    user_question = request.question_text.lower().strip()
+
+    if "osi" in user_question:
         return {
             "answer": OSI_MODEL_RESPONSE,
             "citations": ["Networking Standards", "ISO Model"]
+        }
+
+    # Custom Fuzzy Matching for Hardcoded Suggestions
+    best_match_key = None
+    best_match_score = 0
+    
+    # We use fuzz.token_set_ratio because it handles extra words or slightly jumbled order well
+    for key in SUGGESTED_DOUBTS.keys():
+        score = fuzz.token_set_ratio(user_question, key.lower())
+        if score > best_match_score:
+            best_match_score = score
+            best_match_key = key
+            
+    # threshold tuning: 80% similarity threshold
+    if best_match_score >= 80 and best_match_key:
+        return {
+            "answer": SUGGESTED_DOUBTS[best_match_key]["text"],
+            "citations": SUGGESTED_DOUBTS[best_match_key]["citations"]
         }
 
     api_key = os.getenv("GOOGLE_API_KEY")
