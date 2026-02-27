@@ -9,6 +9,10 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   /* config options here */
+  output: "export",
+  images: {
+    unoptimized: true,
+  },
   reactCompiler: true,
   turbopack: {},
 };

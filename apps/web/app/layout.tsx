@@ -18,6 +18,7 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "Manan",
   description: "AI-powered learning platform",
+  manifest: "/manifest.json",
 };
 
 export const viewport = {

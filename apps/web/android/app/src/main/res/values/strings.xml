@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">manan</string>
+    <string name="title_activity_main">manan</string>
+    <string name="package_name">com.manan.app</string>
+    <string name="custom_url_scheme">com.manan.app</string>
+</resources>
